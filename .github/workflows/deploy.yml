@@ -1,0 +1,74 @@
+name: Deploy Vehicle Telemetry Dashboard
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r use_cases/requirements.txt
+    
+    - name: Test imports
+      run: |
+        python -c "import flask; import flask_socketio; import eventlet; print('All dependencies installed successfully')"
+    
+    - name: Run syntax check
+      run: |
+        python -m py_compile use_cases/vehicle_telemetry/app.py
+        python -m py_compile use_cases/digital_twin/app.py
+        python -m py_compile use_cases/resource_allocation/app.py
+    
+    - name: Display success message
+      run: |
+        echo "✅ All tests passed!"
+        echo "🚗🚢 Vehicle Telemetry Dashboard is ready to deploy"
+        echo "🇻🇳 Vietnam territory (Hoàng Sa & Trường Sa) map included"
+
+  build-info:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Display deployment info
+      run: |
+        echo "=========================================="
+        echo "Vehicle Telemetry Dashboard - Deployment Info"
+        echo "=========================================="
+        echo "Repository: ${{ github.repository }}"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Author: ${{ github.actor }}"
+        echo ""
+        echo "📦 Components:"
+        echo "  - Vehicle Telemetry (Port 5008)"
+        echo "  - Digital Twin Simulation (Port 5002)"
+        echo "  - Resource Allocation (Port 5003)"
+        echo ""
+        echo "🗺️ Vietnam Coverage:"
+        echo "  - Hoàng Sa (Paracel Islands)"
+        echo "  - Trường Sa (Spratly Islands)"
+        echo "  - Coastal waters & inland cities"
+        echo ""
+        echo "To run locally:"
+        echo "  pip install -r use_cases/requirements.txt"
+        echo "  python use_cases/vehicle_telemetry/app.py"
+        echo "  Open: http://localhost:5008"
+        echo "=========================================="

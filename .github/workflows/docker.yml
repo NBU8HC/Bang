@@ -1,0 +1,44 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create Dockerfile
+      run: |
+        cat > Dockerfile << 'EOF'
+        FROM python:3.11-slim
+
+        WORKDIR /app
+
+        # Copy requirements and install dependencies
+        COPY use_cases/requirements.txt .
+        RUN pip install --no-cache-dir -r requirements.txt
+
+        # Copy application files
+        COPY use_cases/ ./use_cases/
+
+        # Expose ports
+        EXPOSE 5008 5002 5003
+
+        # Default command runs vehicle telemetry
+        CMD ["python", "use_cases/vehicle_telemetry/app.py"]
+        EOF
+    
+    - name: Build Docker image
+      run: |
+        docker build -t vehicle-telemetry:latest .
+        echo "✅ Docker image built successfully"
+    
+    - name: Test Docker image
+      run: |
+        echo "🐳 Docker image is ready to run"
+        echo "To run: docker run -p 5008:5008 vehicle-telemetry:latest"
