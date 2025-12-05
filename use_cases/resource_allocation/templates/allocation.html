@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Allocation System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #eee;
+        }
+        .header {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: #161b22;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .panel h2 {
+            margin-bottom: 15px;
+            color: #fa709a;
+            font-size: 18px;
+        }
+        .resource-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .resource-item {
+            background: #21262d;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: grab;
+            border-left: 3px solid #58a6ff;
+            transition: all 0.2s;
+        }
+        .resource-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
+        }
+        .resource-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        .resource-item.assigned {
+            opacity: 0.5;
+            border-left-color: #666;
+        }
+        .resource-name {
+            font-weight: bold;
+            color: #58a6ff;
+            margin-bottom: 5px;
+        }
+        .resource-detail {
+            font-size: 12px;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+        }
+        .work-order-card {
+            background: #21262d;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 2px dashed #666;
+            transition: all 0.3s;
+        }
+        .work-order-card.drag-over {
+            border-color: #fa709a;
+            background: #2d1b22;
+            transform: scale(1.02);
+        }
+        .work-order-card.pending {
+            border-color: #58a6ff;
+        }
+        .work-order-card.in_progress {
+            border-color: #3fb950;
+            box-shadow: 0 0 15px rgba(63, 185, 80, 0.2);
+        }
+        .work-order-card.blocked {
+            border-color: #f85149;
+            box-shadow: 0 0 15px rgba(248, 81, 73, 0.2);
+        }
+        .wo-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .wo-id {
+            font-weight: bold;
+            color: #fa709a;
+            font-size: 16px;
+        }
+        .priority-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .priority-5 { background: #f85149; }
+        .priority-4 { background: #fb8500; }
+        .priority-3 { background: #f39c12; }
+        .priority-2 { background: #58a6ff; }
+        .priority-1 { background: #666; }
+        .wo-detail {
+            font-size: 13px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .wo-label { color: #aaa; }
+        .wo-value { color: #fff; font-weight: bold; }
+        .assignment-slot {
+            background: #0d1117;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            min-height: 50px;
+            border: 2px dashed #30363d;
+        }
+        .assignment-slot.filled {
+            border-color: #3fb950;
+            background: #0d1b11;
+        }
+        .slot-label {
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        .assigned-resource {
+            background: #21262d;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #3fb950;
+            font-weight: bold;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .btn-unassign {
+            background: #f85149;
+            color: white;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #21262d;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fa709a;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .status-pending { background: #58a6ff; }
+        .status-in_progress { background: #3fb950; }
+        .status-blocked { background: #f85149; }
+        .status-available { background: #3fb950; }
+        .status-assigned { background: #f39c12; }
+        .status-break { background: #666; }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.3s;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+        .notif-success { background: #3fb950; color: white; }
+        .notif-error { background: #f85149; color: white; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0d1117; }
+        ::-webkit-scrollbar-thumb { background: #fa709a; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏭 Shop-Floor Resource Allocation</h1>
+        <p>Drag-and-drop resource management with real-time conflict detection</p>
+    </div>
+
+    <div class="container">
+        <!-- Left Panel: Resources -->
+        <div>
+            <div class="panel">
+                <h2>👷 Operators</h2>
+                <div class="resource-list" id="operatorList"></div>
+            </div>
+            <div class="panel" style="margin-top: 20px;">
+                <h2>⚙️ Machines</h2>
+                <div class="resource-list" id="machineList"></div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Work Orders -->
+        <div>
+            <div class="panel">
+                <h2>📋 Work Orders</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="idlePercentage">0%</div>
+                        <div class="stat-label">Idle Resources</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="activeOrders">0</div>
+                        <div class="stat-label">Active Orders</div>
+                    </div>
+                </div>
+                <div id="workOrderList" style="max-height: 600px; overflow-y: auto;"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Materials & History -->
+        <div>
+            <div class="panel">
+                <h2>📦 Materials</h2>
+                <div class="resource-list" id="materialList"></div>
+            </div>
+            <div class="panel" style="margin-top: 20px;">
+                <h2>📜 Recent Activity</h2>
+                <div id="activityLog" style="max-height: 300px; overflow-y: auto; font-size: 12px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = {};
+        let draggedResource = null;
+
+        function loadData() {
+            fetch('/api/state')
+                .then(r => r.json())
+                .then(data => {
+                    currentData = data;
+                    renderDashboard(data);
+                });
+        }
+
+        function renderDashboard(data) {
+            renderOperators(data.operators);
+            renderMachines(data.machines);
+            renderMaterials(data.materials);
+            renderWorkOrders(data.work_orders);
+            renderActivity(data.allocation_history);
+            updateStats(data);
+        }
+
+        function renderOperators(operators) {
+            const list = document.getElementById('operatorList');
+            list.innerHTML = '';
+            operators.forEach(op => {
+                const div = document.createElement('div');
+                div.className = `resource-item ${op.status === 'assigned' ? 'assigned' : ''}`;
+                div.draggable = op.status === 'available';
+                div.dataset.resourceId = op.id;
+                div.dataset.resourceType = 'operator';
+                div.innerHTML = `
+                    <div class="resource-name">${op.name}</div>
+                    <div class="resource-detail">
+                        <span>ID: ${op.id}</span>
+                        <span class="status-badge status-${op.status}">${op.status}</span>
+                    </div>
+                    <div class="resource-detail">
+                        <span>Skill:</span>
+                        <span>${'⭐'.repeat(op.skill_level)}</span>
+                    </div>
+                `;
+                
+                if (op.status === 'available') {
+                    div.addEventListener('dragstart', handleDragStart);
+                    div.addEventListener('dragend', handleDragEnd);
+                }
+                
+                list.appendChild(div);
+            });
+        }
+
+        function renderMachines(machines) {
+            const list = document.getElementById('machineList');
+            list.innerHTML = '';
+            machines.forEach(machine => {
+                const div = document.createElement('div');
+                div.className = `resource-item ${machine.status !== 'available' ? 'assigned' : ''}`;
+                div.draggable = machine.status === 'available';
+                div.dataset.resourceId = machine.id;
+                div.dataset.resourceType = 'machine';
+                div.innerHTML = `
+                    <div class="resource-name">${machine.name}</div>
+                    <div class="resource-detail">
+                        <span>Type: ${machine.machine_type}</span>
+                        <span class="status-badge status-${machine.status}">${machine.status}</span>
+                    </div>
+                `;
+                
+                if (machine.status === 'available') {
+                    div.addEventListener('dragstart', handleDragStart);
+                    div.addEventListener('dragend', handleDragEnd);
+                }
+                
+                list.appendChild(div);
+            });
+        }
+
+        function renderMaterials(materials) {
+            const list = document.getElementById('materialList');
+            list.innerHTML = '';
+            materials.forEach(mat => {
+                const available = mat.quantity - mat.reserved_quantity;
+                const div = document.createElement('div');
+                div.className = 'resource-item';
+                div.innerHTML = `
+                    <div class="resource-name">${mat.name}</div>
+                    <div class="resource-detail">
+                        <span>Available:</span>
+                        <span style="color: ${available < 50 ? '#f85149' : '#3fb950'}">${available} ${mat.unit}</span>
+                    </div>
+                    <div class="resource-detail">
+                        <span>Reserved:</span>
+                        <span>${mat.reserved_quantity} ${mat.unit}</span>
+                    </div>
+                    <div class="resource-detail">
+                        <span>Location:</span>
+                        <span>${mat.location}</span>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function renderWorkOrders(workOrders) {
+            const list = document.getElementById('workOrderList');
+            list.innerHTML = '';
+            
+            // Sort by priority
+            workOrders.sort((a, b) => b.priority - a.priority);
+            
+            workOrders.forEach(wo => {
+                const div = document.createElement('div');
+                div.className = `work-order-card ${wo.status}`;
+                div.dataset.workOrderId = wo.id;
+                
+                div.innerHTML = `
+                    <div class="wo-header">
+                        <span class="wo-id">${wo.id}</span>
+                        <span class="priority-badge priority-${wo.priority}">P${wo.priority}</span>
+                    </div>
+                    <div class="wo-detail">
+                        <span class="wo-label">Product:</span>
+                        <span class="wo-value">${wo.product_name}</span>
+                    </div>
+                    <div class="wo-detail">
+                        <span class="wo-label">Quantity:</span>
+                        <span class="wo-value">${wo.quantity}</span>
+                    </div>
+                    <div class="wo-detail">
+                        <span class="wo-label">Status:</span>
+                        <span class="status-badge status-${wo.status}">${wo.status}</span>
+                    </div>
+                    
+                    <div class="assignment-slot ${wo.assigned_operator ? 'filled' : ''}" 
+                         data-slot-type="operator" data-wo-id="${wo.id}">
+                        <div class="slot-label">👷 Operator (Skill ${wo.required_skill}+)</div>
+                        ${wo.assigned_operator ? 
+                            `<div class="assigned-resource">${wo.assigned_operator}</div>` :
+                            '<div style="text-align:center; color:#666; font-size:11px;">Drop operator here</div>'}
+                    </div>
+                    
+                    <div class="assignment-slot ${wo.assigned_machine ? 'filled' : ''}" 
+                         data-slot-type="machine" data-wo-id="${wo.id}">
+                        <div class="slot-label">⚙️ Machine (${wo.required_machine_type})</div>
+                        ${wo.assigned_machine ? 
+                            `<div class="assigned-resource">${wo.assigned_machine}</div>` :
+                            '<div style="text-align:center; color:#666; font-size:11px;">Drop machine here</div>'}
+                    </div>
+                    
+                    ${wo.blocked_reason ? 
+                        `<div style="background: #2d1111; padding: 8px; border-radius: 4px; margin-top: 10px; font-size: 11px; color: #f85149;">
+                            ⚠️ ${wo.blocked_reason}
+                        </div>` : ''}
+                    
+                    ${wo.assigned_operator || wo.assigned_machine ?
+                        '<button class="btn btn-unassign" onclick="unassignWorkOrder(\'' + wo.id + '\')">Release Resources</button>' : ''}
+                `;
+                
+                // Add drop event listeners to slots
+                const slots = div.querySelectorAll('.assignment-slot');
+                slots.forEach(slot => {
+                    slot.addEventListener('dragover', handleDragOver);
+                    slot.addEventListener('drop', handleDrop);
+                    slot.addEventListener('dragleave', handleDragLeave);
+                });
+                
+                list.appendChild(div);
+            });
+        }
+
+        function renderActivity(history) {
+            const log = document.getElementById('activityLog');
+            log.innerHTML = '';
+            history.reverse().forEach(entry => {
+                const div = document.createElement('div');
+                div.style.cssText = 'padding: 8px; margin-bottom: 5px; background: #21262d; border-radius: 4px;';
+                const time = new Date(entry.timestamp).toLocaleTimeString();
+                div.innerHTML = `
+                    <div style="color: #aaa; font-size: 10px;">${time}</div>
+                    <div>${entry.type.replace('_', ' ')}: ${entry.resource} → ${entry.work_order}</div>
+                `;
+                log.appendChild(div);
+            });
+        }
+
+        function updateStats(data) {
+            document.getElementById('idlePercentage').textContent = data.idle_percentage.toFixed(1) + '%';
+            const activeOrders = data.work_orders.filter(wo => wo.status === 'in_progress').length;
+            document.getElementById('activeOrders').textContent = activeOrders;
+        }
+
+        function handleDragStart(e) {
+            draggedResource = {
+                id: e.target.dataset.resourceId,
+                type: e.target.dataset.resourceType
+            };
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            const slotType = e.currentTarget.dataset.slotType;
+            const workOrderId = e.currentTarget.dataset.woId;
+            
+            if (!draggedResource || draggedResource.type !== slotType) {
+                showNotification('Wrong resource type!', 'error');
+                return;
+            }
+            
+            const endpoint = `/api/assign/${slotType}`;
+            const data = {
+                work_order_id: workOrderId,
+                [`${slotType}_id`]: draggedResource.id
+            };
+            
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    loadData();
+                } else {
+                    showNotification(result.error, 'error');
+                }
+            });
+            
+            draggedResource = null;
+        }
+
+        function unassignWorkOrder(woId) {
+            fetch(`/api/unassign/${woId}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(result => {
+                    if (result.success) {
+                        showNotification(result.message, 'success');
+                        loadData();
+                    }
+                });
+        }
+
+        function showNotification(message, type) {
+            const notif = document.createElement('div');
+            notif.className = `notification notif-${type}`;
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        // Auto-refresh every 5 seconds
+        setInterval(loadData, 5000);
+
+        // Initial load
+        loadData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Telemetry Dashboard</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .header h1 { margin-bottom: 5px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .panel h2 {
+            margin-bottom: 15px;
+            color: #667eea;
+            font-size: 18px;
+        }
+        #map {
+            height: 600px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .vehicle-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .vehicle-card {
+            background: #0f3460;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+        .vehicle-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        .vehicle-card.critical {
+            border-left-color: #e94560;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .vehicle-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .vehicle-id {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 16px;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-active { background: #27ae60; color: white; }
+        .status-critical { background: #e94560; color: white; }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .metric-label { color: #aaa; }
+        .metric-value { font-weight: bold; color: #fff; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        .battery-bar {
+            width: 100%;
+            height: 8px;
+            background: #0f3460;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .battery-fill {
+            height: 100%;
+            transition: width 0.5s, background 0.5s;
+            border-radius: 4px;
+        }
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+        .connected { background: #27ae60; color: white; }
+        .disconnected { background: #e94560; color: white; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f3460; }
+        ::-webkit-scrollbar-thumb { background: #667eea; border-radius: 4px; }
+        
+        /* Car icon styling */
+        .car-icon {
+            font-size: 24px;
+            transition: all 0.8s ease-out;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        .car-icon.moving {
+            animation: pulse-car 2s infinite;
+        }
+        @keyframes pulse-car {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        /* Statistics Board Styling */
+        .statistics-board {
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        .statistics-board h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+            font-size: 22px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .stat-box {
+            background: rgba(15, 52, 96, 0.6);
+            border: 1px solid #667eea;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        .stat-box:hover::before {
+            left: 100%;
+        }
+        .stat-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .stat-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .stat-box-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffffff;
+            margin: 8px 0;
+        }
+        .stat-box-label {
+            font-size: 13px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stat-box-sublabel {
+            font-size: 11px;
+            color: #777;
+            margin-top: 5px;
+        }
+        .stat-trend {
+            font-size: 12px;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+        .trend-up { color: #27ae60; }
+        .trend-down { color: #e94560; }
+        .trend-stable { color: #f39c12; }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">Connecting...</div>
+    
+    <div class="header">
+        <h1>🚗 Vehicle Telemetry Dashboard</h1>
+        <p>Real-time fleet monitoring and visualization</p>
+    </div>
+
+    <div class="container">
+        <!-- Statistics Board -->
+        <div class="panel statistics-board">
+            <h2>📈 Fleet Statistics & Analytics</h2>
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-icon">🚗</div>
+                    <div class="stat-box-value" id="stat-total-vehicles">0</div>
+                    <div class="stat-box-label">Total Fleet</div>
+                    <div class="stat-box-sublabel">Active Vehicles</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-box-value" id="stat-active-count">0</div>
+                    <div class="stat-box-label">Active Status</div>
+                    <div class="stat-trend trend-up" id="stat-active-percent">0%</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-box-value" id="stat-critical-count">0</div>
+                    <div class="stat-box-label">Critical Status</div>
+                    <div class="stat-trend trend-down" id="stat-critical-percent">0%</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-box-value" id="stat-avg-speed">0</div>
+                    <div class="stat-box-label">Avg Speed (All)</div>
+                    <div class="stat-box-sublabel">km/h</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">🚗</div>
+                    <div class="stat-box-value" id="stat-car-avg-speed">0</div>
+                    <div class="stat-box-label">Avg Speed (Cars)</div>
+                    <div class="stat-box-sublabel">km/h</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">🚢</div>
+                    <div class="stat-box-value" id="stat-boat-avg-speed">0</div>
+                    <div class="stat-box-label">Avg Speed (Boats)</div>
+                    <div class="stat-box-sublabel">km/h</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">🔋</div>
+                    <div class="stat-box-value" id="stat-avg-battery">0%</div>
+                    <div class="stat-box-label">Avg Battery</div>
+                    <div class="stat-box-sublabel" id="stat-battery-range">Range: 0-0%</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">📍</div>
+                    <div class="stat-box-value" id="stat-total-distance">0</div>
+                    <div class="stat-box-label">Total Distance</div>
+                    <div class="stat-box-sublabel">Cumulative km</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">🏃</div>
+                    <div class="stat-box-value" id="stat-max-speed">0</div>
+                    <div class="stat-box-label">Max Speed</div>
+                    <div class="stat-box-sublabel" id="stat-max-speed-vehicle">Vehicle: N/A</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">🐢</div>
+                    <div class="stat-box-value" id="stat-min-speed">0</div>
+                    <div class="stat-box-label">Min Speed</div>
+                    <div class="stat-box-sublabel" id="stat-min-speed-vehicle">Vehicle: N/A</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">🔌</div>
+                    <div class="stat-box-value" id="stat-low-battery">0</div>
+                    <div class="stat-box-label">Low Battery</div>
+                    <div class="stat-box-sublabel">&lt; 20% Charge</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-box-value" id="stat-avg-heading">0°</div>
+                    <div class="stat-box-label">Avg Heading</div>
+                    <div class="stat-box-sublabel" id="stat-primary-direction">Direction: N</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-box-value" id="stat-active-drivers">0</div>
+                    <div class="stat-box-label">Active Drivers</div>
+                    <div class="stat-box-sublabel">On Duty</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-box-value" id="stat-last-update">--:--</div>
+                    <div class="stat-box-label">Last Update</div>
+                    <div class="stat-box-sublabel" id="stat-update-frequency">Every 1s</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+        <div class="panel">
+            <h2>📊 Fleet Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalVehicles">0</div>
+                    <div class="stat-label">Total Vehicles</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeVehicles">0</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="criticalVehicles">0</div>
+                    <div class="stat-label">Critical</div>
+                </div>
+            </div>
+            
+            <h2>🚙 Vehicle List</h2>
+            <div class="vehicle-list" id="vehicleList"></div>
+        </div>
+
+            <div class="panel">
+                <h2>🗺️ Live Map</h2>
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io('http://localhost:5008');
+        
+        // Initialize Leaflet map (centered on Vietnam including Hoàng Sa & Trường Sa)
+        const map = L.map('map').setView([14.0, 110.0], 5);
+        
+        // SỬ DỤNG ESRI WORLD IMAGERY - BẢN ĐỒ VỆ TINH KHÔNG CÓ BIÊN GIỚI SAI
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxZoom: 18
+        }).addTo(map);
+        
+        // Thêm layer nhãn không có biên giới
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+        
+        // VẼ VÙNG BIỂN HOÀNG SA - LÃNH THỔ VIỆT NAM với viền đỏ dày
+        const hoangSa = L.rectangle([[15.5, 111.0], [17.5, 113.0]], {
+            color: "#ed1b24",
+            weight: 5,
+            fillColor: "#ffff00",
+            fillOpacity: 0.25,
+            dashArray: '10, 5'
+        }).addTo(map);
+        hoangSa.bindPopup("<strong style='font-size: 16px; color: #ed1b24;'>🇻🇳 QUẦN ĐẢO HOÀNG SA</strong><br><strong>LÃNH THỔ VIỆT NAM</strong><br>(Paracel Islands)<br>Vietnam Territory");
+        
+        // VẼ VÙNG BIỂN TRƯỜNG SA - LÃNH THỔ VIỆT NAM với viền đỏ dày
+        const truongSa = L.rectangle([[7.0, 111.5], [12.0, 117.0]], {
+            color: "#ed1b24",
+            weight: 5,
+            fillColor: "#ffff00",
+            fillOpacity: 0.25,
+            dashArray: '10, 5'
+        }).addTo(map);
+        truongSa.bindPopup("<strong style='font-size: 16px; color: #ed1b24;'>🇻🇳 QUẦN ĐẢO TRƯỜNG SA</strong><br><strong>LÃNH THỔ VIỆT NAM</strong><br>(Spratly Islands)<br>Vietnam Territory");
+        
+        // THÊM CHỮ TO "VIỆT NAM" cho Hoàng Sa
+        L.marker([16.5, 112.0], {
+            icon: L.divIcon({
+                className: 'territory-marker',
+                html: '<div style="background: #ed1b24; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 18px; white-space: nowrap; box-shadow: 0 4px 8px rgba(0,0,0,0.5); border: 3px solid #ffff00;">🇻🇳 HOÀNG SA<br>VIỆT NAM</div>',
+                iconSize: [150, 60]
+            })
+        }).addTo(map);
+        
+        // THÊM CHỮ TO "VIỆT NAM" cho Trường Sa
+        L.marker([9.5, 114.0], {
+            icon: L.divIcon({
+                className: 'territory-marker',
+                html: '<div style="background: #ed1b24; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 18px; white-space: nowrap; box-shadow: 0 4px 8px rgba(0,0,0,0.5); border: 3px solid #ffff00;">🇻🇳 TRƯỜNG SA<br>VIỆT NAM</div>',
+                iconSize: [150, 60]
+            })
+        }).addTo(map);
+        
+        // Thêm chú thích lớn ở góc bản đồ
+        const legend = L.control({position: 'topright'});
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'info legend');
+            div.style.backgroundColor = '#ed1b24';
+            div.style.color = 'white';
+            div.style.padding = '15px';
+            div.style.borderRadius = '8px';
+            div.style.fontWeight = 'bold';
+            div.style.fontSize = '16px';
+            div.style.border = '3px solid #ffff00';
+            div.innerHTML = '🇻🇳 HOÀNG SA & TRƯỜNG SA<br>LÀ LÃNH THỔ VIỆT NAM';
+            return div;
+        };
+        legend.addTo(map);
+
+        // Store vehicle markers
+        const vehicleMarkers = {};
+        let vehicles = {};
+
+        // Connection status handling
+        socket.on('connect', () => {
+            document.getElementById('connectionStatus').textContent = '● Connected';
+            document.getElementById('connectionStatus').className = 'connection-status connected';
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('connectionStatus').textContent = '● Disconnected';
+            document.getElementById('connectionStatus').className = 'connection-status disconnected';
+        });
+
+        // Receive initial data
+        socket.on('initial_data', (data) => {
+            console.log('Received initial data:', data.length, 'vehicles');
+            updateDashboard(data);
+        });
+
+        // Receive real-time updates
+        socket.on('telemetry_update', (data) => {
+            updateDashboard(data);
+        });
+
+        function updateDashboard(vehicleData) {
+            vehicles = {};
+            vehicleData.forEach(v => vehicles[v.id] = v);
+            
+            updateStats();
+            updateVehicleList();
+            updateMap();
+        }
+
+        function updateStats() {
+            const total = Object.keys(vehicles).length;
+            const active = Object.values(vehicles).filter(v => v.status === 'active').length;
+            const critical = Object.values(vehicles).filter(v => v.status === 'critical').length;
+            
+            document.getElementById('totalVehicles').textContent = total;
+            document.getElementById('activeVehicles').textContent = active;
+            document.getElementById('criticalVehicles').textContent = critical;
+            
+            // Update comprehensive statistics board
+            updateStatisticsBoard();
+        }
+        
+        function updateStatisticsBoard() {
+            const vehicleArray = Object.values(vehicles);
+            if (vehicleArray.length === 0) return;
+            
+            // Total fleet
+            document.getElementById('stat-total-vehicles').textContent = vehicleArray.length;
+            
+            // Active and critical counts with percentages
+            const activeCount = vehicleArray.filter(v => v.status === 'active').length;
+            const criticalCount = vehicleArray.filter(v => v.status === 'critical').length;
+            const activePercent = ((activeCount / vehicleArray.length) * 100).toFixed(0);
+            const criticalPercent = ((criticalCount / vehicleArray.length) * 100).toFixed(0);
+            
+            document.getElementById('stat-active-count').textContent = activeCount;
+            document.getElementById('stat-active-percent').textContent = `${activePercent}% of fleet`;
+            document.getElementById('stat-critical-count').textContent = criticalCount;
+            document.getElementById('stat-critical-percent').textContent = `${criticalPercent}% of fleet`;
+            
+            // Average speed (all vehicles)
+            const avgSpeed = vehicleArray.reduce((sum, v) => sum + v.speed, 0) / vehicleArray.length;
+            document.getElementById('stat-avg-speed').textContent = avgSpeed.toFixed(1);
+            
+            // Average speed for cars only
+            const cars = vehicleArray.filter(v => v.vehicle_type === 'car');
+            if (cars.length > 0) {
+                const carAvgSpeed = cars.reduce((sum, v) => sum + v.speed, 0) / cars.length;
+                document.getElementById('stat-car-avg-speed').textContent = carAvgSpeed.toFixed(1);
+            } else {
+                document.getElementById('stat-car-avg-speed').textContent = 'N/A';
+            }
+            
+            // Average speed for boats only
+            const boats = vehicleArray.filter(v => v.vehicle_type === 'boat');
+            if (boats.length > 0) {
+                const boatAvgSpeed = boats.reduce((sum, v) => sum + v.speed, 0) / boats.length;
+                document.getElementById('stat-boat-avg-speed').textContent = boatAvgSpeed.toFixed(1);
+            } else {
+                document.getElementById('stat-boat-avg-speed').textContent = 'N/A';
+            }
+            
+            // Battery statistics
+            const batteries = vehicleArray.map(v => v.battery);
+            const avgBattery = batteries.reduce((sum, b) => sum + b, 0) / batteries.length;
+            const minBattery = Math.min(...batteries);
+            const maxBattery = Math.max(...batteries);
+            const lowBatteryCount = vehicleArray.filter(v => v.battery < 20).length;
+            
+            document.getElementById('stat-avg-battery').textContent = avgBattery.toFixed(1) + '%';
+            document.getElementById('stat-battery-range').textContent = `Range: ${minBattery.toFixed(0)}-${maxBattery.toFixed(0)}%`;
+            document.getElementById('stat-low-battery').textContent = lowBatteryCount;
+            
+            // Total distance (odometer sum)
+            const totalDistance = vehicleArray.reduce((sum, v) => sum + v.odometer, 0);
+            document.getElementById('stat-total-distance').textContent = totalDistance.toFixed(0) + ' km';
+            
+            // Max and min speed with vehicle IDs
+            const maxSpeedVehicle = vehicleArray.reduce((max, v) => v.speed > max.speed ? v : max, vehicleArray[0]);
+            const minSpeedVehicle = vehicleArray.reduce((min, v) => v.speed < min.speed ? v : min, vehicleArray[0]);
+            
+            document.getElementById('stat-max-speed').textContent = maxSpeedVehicle.speed.toFixed(1);
+            document.getElementById('stat-max-speed-vehicle').textContent = `Vehicle: ${maxSpeedVehicle.id}`;
+            document.getElementById('stat-min-speed').textContent = minSpeedVehicle.speed.toFixed(1);
+            document.getElementById('stat-min-speed-vehicle').textContent = `Vehicle: ${minSpeedVehicle.id}`;
+            
+            // Average heading and primary direction
+            const avgHeading = vehicleArray.reduce((sum, v) => sum + (v.heading || 0), 0) / vehicleArray.length;
+            const primaryDirection = getDirection(avgHeading);
+            
+            document.getElementById('stat-avg-heading').textContent = Math.round(avgHeading) + '°';
+            document.getElementById('stat-primary-direction').textContent = `Direction: ${primaryDirection}`;
+            
+            // Active drivers (unique drivers)
+            const uniqueDrivers = new Set(vehicleArray.map(v => v.driver));
+            document.getElementById('stat-active-drivers').textContent = uniqueDrivers.size;
+            
+            // Last update time
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('stat-last-update').textContent = timeString;
+        }
+
+        function updateVehicleList() {
+            const listEl = document.getElementById('vehicleList');
+            listEl.innerHTML = '';
+            
+            Object.values(vehicles).forEach(vehicle => {
+                const card = document.createElement('div');
+                card.className = `vehicle-card ${vehicle.status === 'critical' ? 'critical' : ''}`;
+                
+                const batteryColor = getBatteryColor(vehicle.battery);
+                
+                card.innerHTML = `
+                    <div class="vehicle-header">
+                        <span class="vehicle-id">${vehicle.id}</span>
+                        <span class="status-badge status-${vehicle.status}">${vehicle.status.toUpperCase()}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Speed:</span>
+                        <span class="metric-value">${vehicle.speed.toFixed(1)} km/h</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Battery:</span>
+                        <span class="metric-value">${vehicle.battery.toFixed(1)}%</span>
+                    </div>
+                    <div class="battery-bar">
+                        <div class="battery-fill" style="width: ${vehicle.battery}%; background: ${batteryColor};"></div>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Driver:</span>
+                        <span class="metric-value">${vehicle.driver}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Odometer:</span>
+                        <span class="metric-value">${vehicle.odometer.toFixed(1)} km</span>
+                    </div>
+                `;
+                
+                card.onclick = () => {
+                    map.setView([vehicle.lat, vehicle.lon], 13);
+                    vehicleMarkers[vehicle.id].openPopup();
+                };
+                
+                listEl.appendChild(card);
+            });
+        }
+
+        function isInWater(lat, lon) {
+            // Vietnam water detection - Biển Đông (South China Sea)
+            
+            // Quần đảo Hoàng Sa (Paracel Islands) - Lãnh thổ Việt Nam
+            if (lat >= 15.5 && lat <= 17.5 && lon >= 111.0 && lon <= 113.0) return true;
+            
+            // Quần đảo Trường Sa (Spratly Islands) - Lãnh thổ Việt Nam
+            if (lat >= 7.0 && lat <= 12.0 && lon >= 111.5 && lon <= 117.0) return true;
+            
+            // South China Sea / Biển Đông (East coast)
+            if (lon > 108.5) return true;
+            
+            // Gulf of Tonkin / Vịnh Bắc Bộ (North Vietnam)
+            if (lat > 20.0 && lon > 106.5) return true;
+            
+            // Mekong Delta water areas (South Vietnam)
+            if (lat < 10.5 && lon > 105.0) return true;
+            
+            // Ha Long Bay area / Vịnh Hạ Long
+            if (lat >= 20.5 && lat <= 21.0 && lon >= 106.8 && lon <= 107.5) return true;
+            
+            // Central coast (Da Nang area)
+            if (lat >= 15.5 && lat <= 16.5 && lon > 108.0) return true;
+            
+            return false;
+        }
+        
+        function updateMap() {
+            Object.values(vehicles).forEach(vehicle => {
+                const heading = vehicle.heading || 0;
+                const isMoving = vehicle.speed > 5;
+                const vehicleColor = vehicle.status === 'critical' ? '#e94560' : '#27ae60';
+                
+                // Determine if vehicle is on water or land
+                const inWater = isInWater(vehicle.lat, vehicle.lon);
+                const vehicleIcon = inWater ? '🚢' : '🚗';
+                const vehicleType = inWater ? 'boat' : 'car';
+                
+                if (vehicleMarkers[vehicle.id]) {
+                    // Smoothly update existing marker position
+                    const marker = vehicleMarkers[vehicle.id];
+                    const newLatLng = [vehicle.lat, vehicle.lon];
+                    
+                    // Smooth transition to new position
+                    marker.setLatLng(newLatLng);
+                    
+                    // Update icon with rotation
+                    const icon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div class="car-icon ${isMoving ? 'moving' : ''}" 
+                                    style="transform: rotate(${heading}deg); 
+                                           color: ${vehicleColor};
+                                           text-align: center;
+                                           line-height: 0;">${vehicleIcon}</div>`,
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+                    marker.setIcon(icon);
+                    marker.getPopup().setContent(getPopupContent(vehicle, vehicleType));
+                } else {
+                    // Create new marker with appropriate icon
+                    const icon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div class="car-icon ${isMoving ? 'moving' : ''}" 
+                                    style="transform: rotate(${heading}deg); 
+                                           color: ${vehicleColor};
+                                           text-align: center;
+                                           line-height: 0;">${vehicleIcon}</div>`,
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+                    
+                    const marker = L.marker([vehicle.lat, vehicle.lon], { icon: icon })
+                        .addTo(map)
+                        .bindPopup(getPopupContent(vehicle, vehicleType));
+                    
+                    vehicleMarkers[vehicle.id] = marker;
+                }
+            });
+        }
+
+        function getPopupContent(vehicle, vehicleType = 'car') {
+            const direction = getDirection(vehicle.heading || 0);
+            const typeLabel = vehicleType === 'boat' ? '🚢 Boat' : '🚗 Vehicle';
+            const terrain = vehicleType === 'boat' ? 'Water' : 'Land';
+            return `
+                <strong>${vehicle.id}</strong> ${typeLabel}<br>
+                Terrain: ${terrain}<br>
+                Speed: ${vehicle.speed.toFixed(1)} km/h<br>
+                Battery: ${vehicle.battery.toFixed(1)}%<br>
+                Heading: ${direction} (${Math.round(vehicle.heading || 0)}°)<br>
+                Status: ${vehicle.status}<br>
+                Driver: ${vehicle.driver}
+            `;
+        }
+        
+        function getDirection(heading) {
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.round(((heading % 360) / 45)) % 8;
+            return directions[index];
+        }
+
+        function getBatteryColor(battery) {
+            if (battery > 50) return '#27ae60';
+            if (battery > 20) return '#f39c12';
+            return '#e94560';
+        }
+    </script>
+</body>
+</html>

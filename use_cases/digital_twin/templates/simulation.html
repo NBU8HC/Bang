@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Twin Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e27;
+            color: #eee;
+        }
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .panel h2 {
+            margin-bottom: 15px;
+            color: #f093fb;
+            font-size: 18px;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .btn-start {
+            background: #27ae60;
+            color: white;
+        }
+        .btn-stop {
+            background: #e94560;
+            color: white;
+        }
+        .btn-reset {
+            background: #f39c12;
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #f093fb;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        .assembly-line {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            overflow-x: auto;
+            background: #0a0e27;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .station {
+            min-width: 180px;
+            background: #16213e;
+            border-radius: 10px;
+            padding: 15px;
+            border: 3px solid #333;
+            transition: all 0.3s;
+        }
+        .station.working {
+            border-color: #27ae60;
+            box-shadow: 0 0 20px rgba(39, 174, 96, 0.3);
+        }
+        .station.down {
+            border-color: #e94560;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+            animation: shake 0.5s infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .station-header {
+            font-weight: bold;
+            color: #f093fb;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .station-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .status-idle { background: #555; }
+        .status-working { background: #27ae60; }
+        .status-down { background: #e94560; }
+        .station-metric {
+            font-size: 12px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .metric-label { color: #aaa; }
+        .metric-value { color: #fff; font-weight: bold; }
+        .product-flow {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            overflow-x: auto;
+            padding: 10px;
+            background: #0a0e27;
+            border-radius: 8px;
+        }
+        .product-item {
+            min-width: 100px;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #0f3460;
+            color: #fff;
+            font-size: 14px;
+        }
+        #chartContainer {
+            background: #0f3460;
+            padding: 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚙️ Digital Twin Assembly-Line Simulation</h1>
+        <p>What-if scenario planning and throughput analysis</p>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>🎮 Controls</h2>
+            <div class="controls">
+                <button class="btn btn-start" onclick="startSimulation()" id="startBtn">▶️ Start</button>
+                <button class="btn btn-stop" onclick="stopSimulation()" id="stopBtn" disabled>⏸️ Stop</button>
+                <button class="btn btn-reset" onclick="resetSimulation()">🔄 Reset</button>
+            </div>
+
+            <h2 style="margin-top: 30px;">⚙️ Parameters</h2>
+            <div class="input-group">
+                <label>Batch Size:</label>
+                <input type="number" id="batchSize" value="10" min="1" max="50">
+            </div>
+            <div class="input-group">
+                <label>Simulation Speed:</label>
+                <input type="range" id="speedSlider" min="100" max="2000" value="500" step="100">
+                <span id="speedLabel">0.5x</span>
+            </div>
+            <button class="btn" style="background: #667eea; color: white;" onclick="applyConfig()">Apply Config</button>
+
+            <h2 style="margin-top: 30px;">📊 Statistics</h2>
+            <div id="stationStats" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="simTime">0</div>
+                        <div class="stat-label">Simulation Time (s)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="completed">0</div>
+                        <div class="stat-label">Completed Units</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="throughput">0</div>
+                        <div class="stat-label">Units/Hour</div>
+                    </div>
+                </div>
+
+                <h2>🏭 Assembly Line</h2>
+                <div class="assembly-line" id="assemblyLine"></div>
+
+                <h2>📦 Active Products</h2>
+                <div class="product-flow" id="productFlow"></div>
+            </div>
+
+            <div class="panel" style="margin-top: 20px;">
+                <h2>📈 Throughput Chart</h2>
+                <div id="chartContainer">
+                    <canvas id="throughputChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let updateInterval = null;
+        let throughputData = [];
+        let chart = null;
+
+        // Initialize chart
+        const ctx = document.getElementById('throughputChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Throughput (units/hour)',
+                    data: [],
+                    borderColor: '#f093fb',
+                    backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#333' },
+                        ticks: { color: '#aaa' }
+                    },
+                    x: {
+                        grid: { color: '#333' },
+                        ticks: { color: '#aaa' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: '#fff' }
+                    }
+                }
+            }
+        });
+
+        function startSimulation() {
+            fetch('/api/start', { method: 'POST' })
+                .then(r => r.json())
+                .then(() => {
+                    isRunning = true;
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    startUpdates();
+                });
+        }
+
+        function stopSimulation() {
+            fetch('/api/stop', { method: 'POST' })
+                .then(r => r.json())
+                .then(() => {
+                    isRunning = false;
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    stopUpdates();
+                });
+        }
+
+        function resetSimulation() {
+            fetch('/api/reset', { method: 'POST' })
+                .then(r => r.json())
+                .then(() => {
+                    throughputData = [];
+                    chart.data.labels = [];
+                    chart.data.datasets[0].data = [];
+                    chart.update();
+                    updateDashboard();
+                });
+        }
+
+        function applyConfig() {
+            const batchSize = document.getElementById('batchSize').value;
+            fetch('/api/configure', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ batch_size: batchSize })
+            }).then(r => r.json()).then(data => {
+                console.log('Configuration applied:', data);
+            });
+        }
+
+        function startUpdates() {
+            const speed = parseInt(document.getElementById('speedSlider').value);
+            updateInterval = setInterval(() => {
+                fetch('/api/step', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ delta: 1.0 })
+                })
+                .then(r => r.json())
+                .then(data => updateDashboard(data));
+            }, speed);
+        }
+
+        function stopUpdates() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+                updateInterval = null;
+            }
+        }
+
+        function updateDashboard(data = null) {
+            if (!data) {
+                fetch('/api/state')
+                    .then(r => r.json())
+                    .then(d => renderDashboard(d));
+            } else {
+                renderDashboard(data);
+            }
+        }
+
+        function renderDashboard(data) {
+            // Update stats
+            document.getElementById('simTime').textContent = data.simulation_time;
+            document.getElementById('completed').textContent = data.completed_units;
+            document.getElementById('throughput').textContent = data.throughput_per_hour.toFixed(1);
+
+            // Update assembly line
+            const lineEl = document.getElementById('assemblyLine');
+            lineEl.innerHTML = '';
+            data.stations.forEach(station => {
+                const stationDiv = document.createElement('div');
+                stationDiv.className = `station ${station.current_status}`;
+                stationDiv.innerHTML = `
+                    <div class="station-header">${station.name}</div>
+                    <div class="station-status status-${station.current_status}">${station.current_status.toUpperCase()}</div>
+                    <div class="station-metric">
+                        <span class="metric-label">Cycle:</span>
+                        <span class="metric-value">${station.cycle_time.toFixed(1)}s</span>
+                    </div>
+                    <div class="station-metric">
+                        <span class="metric-label">Processed:</span>
+                        <span class="metric-value">${station.units_processed}</span>
+                    </div>
+                `;
+                lineEl.appendChild(stationDiv);
+            });
+
+            // Update products
+            const flowEl = document.getElementById('productFlow');
+            flowEl.innerHTML = '';
+            data.products.forEach(product => {
+                const prodDiv = document.createElement('div');
+                prodDiv.className = 'product-item';
+                prodDiv.textContent = product.id;
+                flowEl.appendChild(prodDiv);
+            });
+
+            // Update chart
+            if (data.simulation_time > 0 && data.simulation_time % 10 === 0) {
+                chart.data.labels.push(data.simulation_time);
+                chart.data.datasets[0].data.push(data.throughput_per_hour);
+                if (chart.data.labels.length > 50) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+                chart.update('none');
+            }
+        }
+
+        // Speed slider update
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            const speed = (val / 1000).toFixed(1);
+            document.getElementById('speedLabel').textContent = speed + 'x';
+            if (isRunning) {
+                stopUpdates();
+                startUpdates();
+            }
+        });
+
+        // Initial load
+        updateDashboard();
+    </script>
+</body>
+</html>
