@@ -6,6 +6,13 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 import threading
 from datetime import datetime
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+    print("Warning: openpyxl not installed. Excel export will not be available.")
 
 def read_file(file_path):
     with open(file_path, 'r') as file:
@@ -82,6 +89,101 @@ def clone_parameter(content, target_name, suffix, position="Suffix"):
     new_block = '\n'.join(cleaned_lines)
     return new_block.strip()
 
+def extract_parameter_type(block):
+    """Extract parameter type (KENNLINIE, KENNFELD, FESTWERT, etc.) from parameter block."""
+    if not block:
+        return "Unknown"
+    
+    first_line = block.split('\n')[0].strip()
+    parts = first_line.split(maxsplit=1)
+    
+    if len(parts) > 0:
+        return parts[0]
+    return "Unknown"
+
+def extract_parameter_value(block):
+    """Extract WERT or TEXT value from parameter block."""
+    if not block:
+        return ""
+    
+    lines = block.split('\n')
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('WERT') or stripped.startswith('TEXT'):
+            parts = stripped.split(maxsplit=1)
+            if len(parts) > 1:
+                return parts[1]
+    return ""
+
+def parse_parameter_details(content, param_name):
+    """Get full parameter details including type and value."""
+    block = find_specific_kennlinie(content, param_name)
+    
+    if not block:
+        return None
+    
+    param_type = extract_parameter_type(block)
+    param_value = extract_parameter_value(block)
+    
+    return {
+        'name': param_name,
+        'type': param_type,
+        'value': param_value,
+        'block': block
+    }
+
+def extract_all_parameters(content):
+    """Extract all parameters from DCM content efficiently in one pass."""
+    parameters = []
+    keywords = ("KENNLINIE", "KENNFELD", "FESTWERT", "GRUPPENKENNLINIE")
+    
+    lines = content.split('\n')
+    i = 0
+    
+    while i < len(lines):
+        stripped = lines[i].strip()
+        
+        # Check if this line starts a parameter definition
+        if stripped.startswith(keywords):
+            parts = stripped.split()
+            if len(parts) > 1:
+                param_name = parts[1]
+                param_type = parts[0]
+                
+                # Collect the entire block until END
+                block_lines = [lines[i]]
+                i += 1
+                
+                while i < len(lines):
+                    block_lines.append(lines[i])
+                    if lines[i].strip() == 'END':
+                        break
+                    i += 1
+                
+                block = '\n'.join(block_lines)
+                
+                # Extract value from block
+                param_value = ""
+                for line in block_lines:
+                    line_stripped = line.strip()
+                    if line_stripped.startswith('WERT') or line_stripped.startswith('TEXT'):
+                        value_parts = line_stripped.split(maxsplit=1)
+                        if len(value_parts) > 1:
+                            param_value = value_parts[1]
+                        break
+                
+                # Add to parameters list
+                parameters.append({
+                    'name': param_name,
+                    'type': param_type,
+                    'value': param_value,
+                    'block': block
+                })
+        
+        i += 1
+    
+    return parameters
+
 class MultiDirectoryDialog:
     def __init__(self, parent):
         self.parent = parent
@@ -121,7 +223,6 @@ class MultiDirectoryDialog:
         self.path_combo['values'] = self.parent_folder_history
         if self.parent_folder_history:
             self.current_path_var.set(self.parent_folder_history[0])
-            self.load_subdirectories(self.parent_folder_history[0])
         self.path_combo.pack(fill=tk.X)
         self.path_combo.bind('<<ComboboxSelected>>', self.on_path_selected)
         
@@ -146,6 +247,10 @@ class MultiDirectoryDialog:
         self.available_listbox.bind('<Control-a>', self.select_all_available)
         self.available_listbox.bind('<Return>', self.add_selected_directories)
         self.available_listbox.bind('<Double-Button-1>', self.add_selected_directories)
+        
+        # Load initial directory if history exists
+        if self.parent_folder_history:
+            self.load_subdirectories(self.parent_folder_history[0])
         
         # TRANSFER BUTTONS - These were missing!
         transfer_frame = tk.Frame(main_frame)
@@ -338,6 +443,15 @@ class ParameterClonerApp:
         self.suffix_array = ["Super"]
         self.parameter_widgets = {}
         
+        # Config file and history
+        self.config_file = os.path.join(os.path.dirname(__file__), 'split_parameter_config.json')
+        self.list_file_history = []
+        self.scan_directory_history = []
+        self.load_config()
+        
+        # Excel report tracking
+        self.cloning_history = []  # Track all cloning operations for Excel report
+        
         self.setup_gui()
     
     def setup_gui(self):
@@ -378,11 +492,13 @@ class ParameterClonerApp:
         list_file_frame.pack(fill=tk.X, padx=15, pady=15)
         list_file_frame.columnconfigure(0, weight=1)
         
-        self.list_file_entry = tk.Entry(list_file_frame, width=70, 
-                                        font=('Segoe UI', 9),
-                                        relief=tk.SOLID, 
-                                        borderwidth=1)
-        self.list_file_entry.grid(row=0, column=0, sticky='ew', padx=(0, 10), ipady=6)
+        self.list_file_var = tk.StringVar(value="")
+        self.list_file_combo = ttk.Combobox(list_file_frame, textvariable=self.list_file_var,
+                                            font=('Segoe UI', 9))
+        self.list_file_combo['values'] = self.list_file_history
+        if self.list_file_history:
+            self.list_file_var.set(self.list_file_history[0])
+        self.list_file_combo.grid(row=0, column=0, sticky='ew', padx=(0, 10), ipady=6)
         
         browse_btn = tk.Button(list_file_frame, text="📁 Browse", 
                               command=self.select_list_file,
@@ -597,6 +713,10 @@ class ParameterClonerApp:
                              bg=self.colors['success'], fg='white', width=15, **action_btn_style)
         clone_btn.pack(side=tk.LEFT, padx=(0, 8))
         
+        export_btn = tk.Button(button_frame, text="📊 Export Excel", command=self.export_excel_report, 
+                              bg='#9C27B0', fg='white', width=15, **action_btn_style)
+        export_btn.pack(side=tk.LEFT, padx=(0, 8))
+        
         # Parameter Configuration Section
         self.param_config_frame = tk.LabelFrame(main_frame, text="📋 Parameter Configuration", 
                                                font=('Segoe UI', 10, 'bold'),
@@ -685,10 +805,16 @@ class ParameterClonerApp:
         if not directory:
             return
             
-        self.list_file_path = self.list_file_entry.get().strip()
+        self.list_file_path = self.list_file_var.get().strip()
         if not self.list_file_path or not os.path.isfile(self.list_file_path):
             messagebox.showerror("Error", "Please select a valid parameter list file first")
             return
+        
+        # Save directory to history
+        if directory not in self.scan_directory_history:
+            self.scan_directory_history.insert(0, directory)
+            self.scan_directory_history = self.scan_directory_history[:10]  # Keep last 10
+            self.save_config()
             
         self.start_scan_process([directory])
 
@@ -699,7 +825,7 @@ class ParameterClonerApp:
         if not dialog.selected_directories:
             return
             
-        self.list_file_path = self.list_file_entry.get().strip()
+        self.list_file_path = self.list_file_var.get().strip()
         if not self.list_file_path or not os.path.isfile(self.list_file_path):
             messagebox.showerror("Error", "Please select a valid parameter list file first")
             return
@@ -846,8 +972,14 @@ class ParameterClonerApp:
         
         if file_path:
             self.list_file_path = file_path
-            self.list_file_entry.delete(0, tk.END)
-            self.list_file_entry.insert(0, file_path)
+            self.list_file_var.set(file_path)
+            
+            # Save to history
+            if file_path not in self.list_file_history:
+                self.list_file_history.insert(0, file_path)
+                self.list_file_history = self.list_file_history[:10]  # Keep last 10
+                self.list_file_combo['values'] = self.list_file_history
+                self.save_config()
     
     def on_position_change(self, *args):
         """Show/hide replace mode options based on position selection"""
@@ -889,10 +1021,17 @@ class ParameterClonerApp:
             return
             
         # Check if parameter list file is selected
-        self.list_file_path = self.list_file_entry.get().strip()
+        self.list_file_path = self.list_file_var.get().strip()
         if not self.list_file_path or not os.path.isfile(self.list_file_path):
             messagebox.showerror("Error", "Please select a valid parameter list file")
             return
+        
+        # Save list file to history
+        if self.list_file_path not in self.list_file_history:
+            self.list_file_history.insert(0, self.list_file_path)
+            self.list_file_history = self.list_file_history[:10]  # Keep last 10
+            self.list_file_combo['values'] = self.list_file_history
+            self.save_config()
         
         # Load parameter list
         try:
@@ -1037,6 +1176,9 @@ class ParameterClonerApp:
             "This action will modify the original files."):
             return
         
+        # Clear cloning history for new operation
+        self.cloning_history = []
+        
         # Get the clone option
         clone_option = self.clone_option_var.get()
         
@@ -1110,29 +1252,123 @@ class ParameterClonerApp:
                                 
                                 new_block = '\n'.join(cleaned_lines).strip()
                                 
+                                # Check if new parameter already exists
+                                existing_new_param = find_specific_kennlinie(updated_content, new_name)
+                                
                                 if replace_mode == "direct_replace":
                                     # Replace directly: modify the existing parameter in place
                                     updated_content = updated_content.replace(block, new_block)
                                     file_modified = True
                                     file_clones += 1
                                     self.log_message(f"  - Replaced {param} with {suffix} (direct)")
+                                    
+                                    # Track for Excel report - store full blocks
+                                    self.cloning_history.append({
+                                        'file': file_path,
+                                        'folder': os.path.dirname(file_path),
+                                        'old_param': param,
+                                        'new_param': new_name,
+                                        'old_value': block,  # Full old block
+                                        'new_value': new_block,  # Full new block
+                                        'type': param_type,
+                                        'operation': 'Replace (Direct)',
+                                        'status': 'Success'
+                                    })
+                                elif existing_new_param:
+                                    # New parameter already exists - skip cloning
+                                    self.log_message(f"  - Skipped {new_name}: Already Splitted")
+                                    
+                                    # Track as already split
+                                    self.cloning_history.append({
+                                        'file': file_path,
+                                        'folder': os.path.dirname(file_path),
+                                        'old_param': param,
+                                        'new_param': new_name,
+                                        'old_value': block,
+                                        'new_value': existing_new_param,
+                                        'type': param_type,
+                                        'operation': 'Replace (Clone)',
+                                        'status': 'Already Splitted'
+                                    })
                                 else:
                                     # Clone and replace: create new parameter with new name
                                     updated_content = updated_content.rstrip() + "\n\n" + new_block + "\n"
                                     file_modified = True
                                     file_clones += 1
                                     self.log_message(f"  - Cloned {param} as {suffix} (new parameter)")
+                                    
+                                    # Track for Excel report - store full blocks
+                                    self.cloning_history.append({
+                                        'file': file_path,
+                                        'folder': os.path.dirname(file_path),
+                                        'old_param': param,
+                                        'new_param': new_name,
+                                        'old_value': block,  # Full old block
+                                        'new_value': new_block,  # Full new block
+                                        'type': param_type,
+                                        'operation': 'Replace (Clone)',
+                                        'status': 'Success'
+                                    })
                             else:
                                 # Prefix or Suffix mode: just clone normally
                                 cloned_block = clone_parameter(updated_content, param, suffix, position)
                                 
                                 if cloned_block:
-                                    # Add the cloned block to the end of the file
-                                    updated_content = updated_content.rstrip() + "\n\n" + cloned_block + "\n"
-                                    file_modified = True
-                                    file_clones += 1
-                                    position_text = "prefix" if position == "Prefix" else "suffix"
-                                    self.log_message(f"  - Cloned {param} with {position_text} '{suffix}'")
+                                    # Determine new parameter name
+                                    if position == "Prefix":
+                                        if suffix.endswith('_') or param.startswith('_'):
+                                            new_param_name = f"{suffix}{param}"
+                                        else:
+                                            new_param_name = f"{suffix}_{param}"
+                                    else:  # Suffix
+                                        if param.endswith('_') or suffix.startswith('_'):
+                                            new_param_name = f"{param}{suffix}"
+                                        else:
+                                            new_param_name = f"{param}_{suffix}"
+                                    
+                                    # Check if new parameter already exists
+                                    existing_new_param = find_specific_kennlinie(updated_content, new_param_name)
+                                    
+                                    if existing_new_param:
+                                        # Parameter already exists - skip cloning
+                                        position_text = "prefix" if position == "Prefix" else "suffix"
+                                        self.log_message(f"  - Skipped {new_param_name}: Already Splitted")
+                                        
+                                        # Track as already split
+                                        old_block = find_specific_kennlinie(content, param)
+                                        self.cloning_history.append({
+                                            'file': file_path,
+                                            'folder': os.path.dirname(file_path),
+                                            'old_param': param,
+                                            'new_param': new_param_name,
+                                            'old_value': old_block if old_block else "",
+                                            'new_value': existing_new_param,
+                                            'type': extract_parameter_type(cloned_block),
+                                            'operation': f'{position_text.capitalize()}',
+                                            'status': 'Already Splitted'
+                                        })
+                                    else:
+                                        # Add the cloned block to the end of the file
+                                        updated_content = updated_content.rstrip() + "\n\n" + cloned_block + "\n"
+                                        file_modified = True
+                                        file_clones += 1
+                                        position_text = "prefix" if position == "Prefix" else "suffix"
+                                        self.log_message(f"  - Cloned {param} with {position_text} '{suffix}'")
+                                        
+                                        # Track for Excel report - store full blocks
+                                        old_block = find_specific_kennlinie(content, param)
+                                        
+                                        self.cloning_history.append({
+                                            'file': file_path,
+                                            'folder': os.path.dirname(file_path),
+                                            'old_param': param,
+                                            'new_param': new_param_name,
+                                            'old_value': old_block if old_block else "",  # Full old block
+                                            'new_value': cloned_block,  # Full new block
+                                            'type': extract_parameter_type(cloned_block),
+                                            'operation': f'{position_text.capitalize()}',
+                                            'status': 'Success'
+                                        })
                 
                 elif clone_option == "replace_text":
                     # Option 2: Replace text in parameter name (always creates new parameter)
@@ -1176,11 +1412,44 @@ class ParameterClonerApp:
                         
                         new_block = '\n'.join(cleaned_lines).strip()
                         
-                        # Always create new parameter (clone mode)
-                        updated_content = updated_content.rstrip() + "\n\n" + new_block + "\n"
-                        file_modified = True
-                        file_clones += 1
-                        self.log_message(f"  - Created {new_param_name} from {param}")
+                        # Check if new parameter already exists
+                        existing_new_param = find_specific_kennlinie(updated_content, new_param_name)
+                        
+                        if existing_new_param:
+                            # Parameter already exists - skip cloning
+                            self.log_message(f"  - Skipped {new_param_name}: Already Splitted")
+                            
+                            # Track as already split
+                            self.cloning_history.append({
+                                'file': file_path,
+                                'folder': os.path.dirname(file_path),
+                                'old_param': param,
+                                'new_param': new_param_name,
+                                'old_value': block,
+                                'new_value': existing_new_param,
+                                'type': param_type,
+                                'operation': 'Replace Text',
+                                'status': 'Already Splitted'
+                            })
+                        else:
+                            # Always create new parameter (clone mode)
+                            updated_content = updated_content.rstrip() + "\n\n" + new_block + "\n"
+                            file_modified = True
+                            file_clones += 1
+                            self.log_message(f"  - Created {new_param_name} from {param}")
+                            
+                            # Track for Excel report - store full blocks
+                            self.cloning_history.append({
+                                'file': file_path,
+                                'folder': os.path.dirname(file_path),
+                                'old_param': param,
+                                'new_param': new_param_name,
+                                'old_value': block,  # Full old block
+                                'new_value': new_block,  # Full new block
+                                'type': param_type,
+                                'operation': 'Replace Text',
+                                'status': 'Success'
+                            })
             
             # Save the updated file if modified
             if file_modified:
@@ -1204,6 +1473,360 @@ class ParameterClonerApp:
         else:
             self.log_message("\nNo files were modified. No parameters matched the criteria.")
             messagebox.showinfo("Info", "No files were modified. No parameters matched the criteria.")
+
+    def generate_sheet_current_parameters(self, wb, file_params_cache):
+        """Generate Sheet 1: Current Parameters with Values - Only checking list parameters"""
+        ws = wb.create_sheet("Current Parameters", 0)
+        
+        # Define header style
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Set headers
+        headers = ["Parameter Name", "Value", "File Name", "Folder Path", "Status"]
+        ws.append(headers)
+        
+        # Style header row
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Set column widths
+        ws.column_dimensions['A'].width = 35  # Parameter Name
+        ws.column_dimensions['B'].width = 60  # Value (entire block)
+        ws.column_dimensions['C'].width = 30  # File Name
+        ws.column_dimensions['D'].width = 45  # Folder Path
+        ws.column_dimensions['E'].width = 12  # Status
+        
+        # Populate data - only for parameters in the checking list
+        row_num = 2
+        found_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")  # Green
+        missing_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")  # Red
+        missing_font = Font(color="9C0006", bold=True)  # Dark red text
+        
+        # Iterate through each parameter in the checking list
+        for param_name in self.parameter_list:
+            # Check each file for this parameter
+            for file_path, all_params in file_params_cache.items():
+                file_name = os.path.basename(file_path)
+                folder_path = os.path.dirname(file_path)
+                
+                # Look for the parameter in this file's parameters
+                param_found = False
+                param_block = None
+                
+                for param_detail in all_params:
+                    if param_detail['name'] == param_name:
+                        param_found = True
+                        param_block = param_detail['block']
+                        break
+                
+                # Prepare row data
+                if param_found:
+                    # Parameter exists in this file
+                    row_data = [param_name, param_block, file_name, folder_path, "Found"]
+                    ws.append(row_data)
+                    
+                    # Apply green formatting for found parameters
+                    for cell in ws[row_num]:
+                        cell.border = border
+                        cell.alignment = Alignment(vertical="top", wrap_text=True)
+                        cell.fill = found_fill
+                else:
+                    # Parameter missing in this file
+                    row_data = [param_name, "NA", file_name, folder_path, "Missing"]
+                    ws.append(row_data)
+                    
+                    # Apply red formatting for missing parameters
+                    for cell in ws[row_num]:
+                        cell.border = border
+                        cell.alignment = Alignment(vertical="top", wrap_text=True)
+                        cell.fill = missing_fill
+                        cell.font = missing_font
+                
+                row_num += 1
+        
+        # Freeze header row
+        ws.freeze_panes = "A2"
+    
+    def generate_sheet_folder_structure(self, wb, file_params_cache):
+        """Generate Sheet 2: Folder and File Structure"""
+        ws = wb.create_sheet("Folder Structure", 1)
+        
+        # Define styles
+        header_fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        folder_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Set headers
+        headers = ["Folder Path", "File Name", "Full File Path", "Parameters Found", "Parameter Count"]
+        ws.append(headers)
+        
+        # Style header row
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Set column widths
+        ws.column_dimensions['A'].width = 45
+        ws.column_dimensions['B'].width = 30
+        ws.column_dimensions['C'].width = 60
+        ws.column_dimensions['D'].width = 40
+        ws.column_dimensions['E'].width = 15
+        
+        # Group files by folder
+        folder_dict = {}
+        for file_path in file_params_cache.keys():
+            folder_path = os.path.dirname(file_path)
+            if folder_path not in folder_dict:
+                folder_dict[folder_path] = []
+            folder_dict[folder_path].append(file_path)
+        
+        # Populate data using cached parameters
+        row_num = 2
+        for folder_path in sorted(folder_dict.keys()):
+            for file_path in sorted(folder_dict[folder_path]):
+                file_name = os.path.basename(file_path)
+                all_params = file_params_cache[file_path]
+                param_names = [p['name'] for p in all_params]
+                param_count = len(param_names)
+                params_str = ", ".join(param_names[:5])  # Show first 5
+                if param_count > 5:
+                    params_str += f"... (+{param_count - 5} more)"
+                
+                row_data = [folder_path, file_name, file_path, params_str, param_count]
+                ws.append(row_data)
+                
+                # Apply formatting
+                for cell in ws[row_num]:
+                    cell.border = border
+                    cell.alignment = Alignment(vertical="center", wrap_text=True)
+                    if cell.column == 1:  # Folder column
+                        cell.fill = folder_fill
+                        cell.font = Font(bold=True)
+                
+                row_num += 1
+        
+        # Freeze header row
+        ws.freeze_panes = "A2"
+    
+    def generate_sheet_cloning_comparison(self, wb):
+        """Generate Sheet 3: Split Comparison (Old vs New)"""
+        ws = wb.create_sheet("Split Comparison", 2)
+        
+        # Define styles
+        header_fill = PatternFill(start_color="FFC000", end_color="FFC000", fill_type="solid")
+        header_font = Font(bold=True, color="000000", size=11)
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        new_param_fill = PatternFill(start_color="DDEBF7", end_color="DDEBF7", fill_type="solid")  # Blue
+        replace_fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")  # Yellow
+        already_split_fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")  # Gray
+        already_split_font = Font(color="7F7F7F", italic=True)  # Gray italic text
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Set headers - removed Old Type and New Type columns
+        headers = ["Folder", "File", "Old Parameter", "Old Value", 
+                   "New Parameter", "New Value", "Operation", "Status"]
+        ws.append(headers)
+        
+        # Style header row
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Set column widths
+        ws.column_dimensions['A'].width = 40  # Folder
+        ws.column_dimensions['B'].width = 25  # File
+        ws.column_dimensions['C'].width = 30  # Old Parameter
+        ws.column_dimensions['D'].width = 60  # Old Value (full block)
+        ws.column_dimensions['E'].width = 30  # New Parameter
+        ws.column_dimensions['F'].width = 60  # New Value (full block)
+        ws.column_dimensions['G'].width = 18  # Operation
+        ws.column_dimensions['H'].width = 12  # Status
+        
+        # Populate data from cloning history
+        row_num = 2
+        for entry in self.cloning_history:
+            folder = entry.get('folder', '')
+            file_name = os.path.basename(entry.get('file', ''))
+            old_param = entry.get('old_param', '')
+            old_value = entry.get('old_value', '')  # Full block
+            new_param = entry.get('new_param', '')
+            new_value = entry.get('new_value', '')  # Full block
+            operation = entry.get('operation', '')
+            status = entry.get('status', '')
+            
+            row_data = [folder, file_name, old_param, old_value,
+                       new_param, new_value, operation, status]
+            ws.append(row_data)
+            
+            # Apply formatting
+            for cell in ws[row_num]:
+                cell.border = border
+                cell.alignment = Alignment(vertical="top", wrap_text=True)  # Top alignment for blocks
+                
+                # Color code based on status and operation
+                if status == "Already Splitted":
+                    cell.fill = already_split_fill
+                    cell.font = already_split_font
+                elif "Replace" in operation:
+                    cell.fill = replace_fill
+                else:
+                    cell.fill = new_param_fill
+            
+            row_num += 1
+        
+        # If no cloning history, show message
+        if not self.cloning_history:
+            ws.append(["No cloning operations recorded yet.", "", "", "", "", "", "", ""])
+            ws['A2'].font = Font(italic=True, color="666666")
+        
+        # Freeze header row
+        ws.freeze_panes = "A2"
+    
+    def export_excel_report(self):
+        """Export comprehensive Excel report with 3 sheets"""
+        # Check if openpyxl is available
+        if not OPENPYXL_AVAILABLE:
+            messagebox.showerror("Error", 
+                "openpyxl library is not installed.\n\n"
+                "Please install it using:\npip install openpyxl")
+            return
+        
+        # Check if data is loaded
+        if not self.file_contents or not self.parameter_list:
+            messagebox.showerror("Error", 
+                "Please load files and parameters first before exporting report.")
+            return
+        
+        try:
+            self.log_message("Starting Excel report generation...")
+            self.root.update()  # Update UI
+            
+            # Pre-extract all parameters from all files (cache for reuse)
+            self.log_message(f"Analyzing {len(self.file_contents)} files...")
+            self.root.update()
+            
+            file_params_cache = {}
+            for idx, (file_path, content) in enumerate(self.file_contents.items(), 1):
+                file_params_cache[file_path] = extract_all_parameters(content)
+                if idx % 10 == 0:  # Log progress every 10 files
+                    self.log_message(f"  Processed {idx}/{len(self.file_contents)} files...")
+                    self.root.update()
+            
+            total_params = sum(len(params) for params in file_params_cache.values())
+            self.log_message(f"Found {total_params} parameters across all files")
+            self.root.update()
+            
+            # Create Report folder if it doesn't exist
+            report_folder = os.path.join(os.path.dirname(__file__), 'Report')
+            if not os.path.exists(report_folder):
+                os.makedirs(report_folder)
+                self.log_message(f"Created Report folder: {report_folder}")
+            
+            # Create workbook
+            wb = Workbook()
+            # Remove default sheet
+            if 'Sheet' in wb.sheetnames:
+                wb.remove(wb['Sheet'])
+            
+            # Generate all sheets with cached data
+            self.log_message("Generating Sheet 1: Current Parameters...")
+            self.root.update()
+            self.generate_sheet_current_parameters(wb, file_params_cache)
+            
+            self.log_message("Generating Sheet 2: Folder Structure...")
+            self.root.update()
+            self.generate_sheet_folder_structure(wb, file_params_cache)
+            
+            self.log_message("Generating Sheet 3: Cloning Comparison...")
+            self.root.update()
+            self.generate_sheet_cloning_comparison(wb)
+            
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            excel_filename = f"Parameter_Report_{timestamp}.xlsx"
+            excel_path = os.path.join(report_folder, excel_filename)
+            
+            # Save workbook
+            self.log_message("Saving Excel file...")
+            self.root.update()
+            wb.save(excel_path)
+            
+            self.log_message(f"Excel report saved successfully!")
+            self.log_message(f"Location: {excel_path}")
+            
+            # Show success message
+            result = messagebox.showinfo("Success", 
+                f"Excel report generated successfully!\n\n"
+                f"File: {excel_filename}\n"
+                f"Location: {report_folder}\n\n"
+                f"Total files analyzed: {len(self.file_contents)}\n"
+                f"Parameters tracked: {len(self.parameter_list)}\n"
+                f"Cloning operations: {len(self.cloning_history)}")
+            
+            # Optional: Open folder in Windows Explorer
+            if messagebox.askyesno("Open Folder", "Do you want to open the Report folder?"):
+                os.startfile(report_folder)
+                
+        except Exception as e:
+            error_msg = f"Error generating Excel report: {str(e)}"
+            self.log_message(error_msg)
+            messagebox.showerror("Export Error", error_msg)
+
+    def load_config(self):
+        """Load configuration including path histories from config file"""
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                    self.list_file_history = config.get('list_file_history', [])
+                    self.scan_directory_history = config.get('scan_directory_history', [])
+        except Exception as e:
+            print(f"Error loading config: {e}")
+            self.list_file_history = []
+            self.scan_directory_history = []
+    
+    def save_config(self):
+        """Save configuration including path histories to config file"""
+        try:
+            config = {}
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+            
+            config['list_file_history'] = self.list_file_history
+            config['scan_directory_history'] = self.scan_directory_history
+            
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"Error saving config: {e}")
 
     def update_results(self, message):
         self.results_text.delete(1.0, tk.END)

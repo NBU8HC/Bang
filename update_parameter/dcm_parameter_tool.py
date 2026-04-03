@@ -5,32 +5,115 @@ from tkinter import filedialog, messagebox, ttk
 from datetime import datetime
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+    print("Warning: openpyxl not installed. Excel export will not be available.")
 
-def process_multiple_directories_parallel(directories, config_parameters, file_extension=".dcm", max_workers=8):
+def extract_all_parameters_from_file(file_path):
+    """Extract all parameters from a DCM file efficiently."""
+    parameters = []
+    keywords = ("KENNLINIE", "KENNFELD", "FESTWERT", "GRUPPENKENNLINIE")
+    
+    try:
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+        except UnicodeDecodeError:
+            with open(file_path, 'r', encoding='latin-1') as file:
+                content = file.read()
+    except Exception as e:
+        print(f"Error reading file {file_path}: {e}")
+        return parameters
+    
+    lines = content.split('\n')
+    i = 0
+    
+    while i < len(lines):
+        stripped = lines[i].strip()
+        
+        # Check if this line starts a parameter definition
+        if stripped.startswith(keywords):
+            parts = stripped.split()
+            if len(parts) > 1:
+                param_name = parts[1]
+                param_type = parts[0]
+                
+                # Collect the entire block until END
+                block_lines = [lines[i]]
+                i += 1
+                
+                while i < len(lines):
+                    block_lines.append(lines[i])
+                    if lines[i].strip() == 'END':
+                        break
+                    i += 1
+                
+                block = '\n'.join(block_lines)
+                
+                # Extract value from block
+                param_value = ""
+                for line in block_lines:
+                    line_stripped = line.strip()
+                    if line_stripped.startswith('WERT') or line_stripped.startswith('TEXT'):
+                        value_parts = line_stripped.split(maxsplit=1)
+                        if len(value_parts) > 1:
+                            param_value = value_parts[1]
+                        break
+                
+                # Add to parameters list
+                parameters.append({
+                    'name': param_name,
+                    'type': param_type,
+                    'value': param_value,
+                    'block': block
+                })
+        
+        i += 1
+    
+    return parameters
+
+def process_multiple_directories_parallel(directories, config_parameters, file_extension=".dcm", max_workers=8, track_updates=False):
     """Song song: tìm + cập nhật các file trong nhiều thư mục."""
     def work(d):
         matching = find_files_with_parameters(d, config_parameters, file_extension)
-        updated = update_files_in_directory(d, config_parameters, file_extension)
-        return d, matching, updated
+        if track_updates:
+            result = update_files_in_directory(d, config_parameters, file_extension, track_updates=True)
+            updated, update_tracking = result
+            return d, matching, updated, update_tracking
+        else:
+            updated = update_files_in_directory(d, config_parameters, file_extension, track_updates=False)
+            return d, matching, updated, []
 
     all_matching = []
     all_updated = []
+    all_tracking = []
     per_dir = []
     if not directories:
+        if track_updates:
+            return all_matching, all_updated, per_dir, all_tracking
         return all_matching, all_updated, per_dir
+    
     workers = min(max_workers, len(directories))
     with ThreadPoolExecutor(max_workers=workers) as ex:
         futures = {ex.submit(work, d): d for d in directories}
         for fut in as_completed(futures):
             d = futures[fut]
             try:
-                dir_path, matching, updated = fut.result()
+                dir_path, matching, updated, tracking = fut.result()
                 per_dir.append((dir_path, matching, updated))
                 all_matching.extend(matching)
                 all_updated.extend(updated)
+                all_tracking.extend(tracking)
             except Exception as e:
                 print(f"Error processing directory {d}: {e}")
                 per_dir.append((d, [], []))
+    
+    if track_updates:
+        return all_matching, all_updated, per_dir, all_tracking
     return all_matching, all_updated, per_dir
 
 def read_config_file(config_path):
@@ -57,14 +140,12 @@ def read_config_file(config_path):
             parts = line.split()
             if len(parts) > 1:
                 current_param = parts[1]
-                print(f"Line {line_num}: Found parameter definition: {current_param}")
             else:
                 print(f"Line {line_num}: Invalid parameter format: {line}")
         elif line.startswith('WERT') and current_param:
             parts = line.split()
             if len(parts) > 1:
                 parameters[current_param] = parts[1]
-                print(f"Line {line_num}: Found parameter: {current_param} with new value: {parameters[current_param]}")
             else:
                 print(f"Line {line_num}: Invalid WERT format: {line}")
             current_param = None
@@ -72,7 +153,6 @@ def read_config_file(config_path):
             parts = line.split()
             if len(parts) > 1:
                 parameters[current_param] = parts[1]
-                print(f"Line {line_num}: Found parameter: {current_param} with new value: {parameters[current_param]}")
             else:
                 print(f"Line {line_num}: Invalid TEXT format: {line}")
             current_param = None
@@ -127,7 +207,6 @@ def find_files_with_parameters(directory, parameters, file_extension=".dcm"):
                     current_param = parts[1]
                     if current_param in parameters:
                         found_params.append(current_param)
-                        print(f"  Found parameter {current_param} at line {line_num}")
         
         if found_params:
             matching_files.append(file_path)
@@ -141,9 +220,10 @@ def find_files_with_parameters(directory, parameters, file_extension=".dcm"):
 
     return matching_files
 
-def update_files_in_directory(directory, config_parameters, file_extension=".dcm"):
+def update_files_in_directory(directory, config_parameters, file_extension=".dcm", track_updates=False):
     """Update parameters in files within the specified directory."""
     updated_files = []
+    update_tracking = []  # Track individual updates
     
     for filename in os.listdir(directory):
         if filename.endswith(file_extension):
@@ -164,6 +244,8 @@ def update_files_in_directory(directory, config_parameters, file_extension=".dcm
 
             updated_lines = []
             current_param = None
+            current_block_lines = []
+            in_block = False
             keywords = ("KENNLINIE", "KENNFELD", "FESTWERT", "GRUPPENKENNLINIE")
             file_was_modified = False
             
@@ -174,25 +256,93 @@ def update_files_in_directory(directory, config_parameters, file_extension=".dcm
                     parts = stripped_line.split()
                     if len(parts) > 1:
                         current_param = parts[1]
+                        in_block = True
+                        current_block_lines = [line]
                         print(f"Found parameter definition: {current_param} in {filename} at line {i+1}")
+                        updated_lines.append(line)
+                        continue
                 
-                elif stripped_line.startswith('WERT') and current_param and current_param in config_parameters:
+                if in_block:
+                    current_block_lines.append(line)
+                    
+                    if stripped_line == 'END':
+                        in_block = False
+                        if current_param not in config_parameters:
+                            current_param = None
+                            current_block_lines = []
+                
+                if stripped_line.startswith('WERT') and current_param and current_param in config_parameters:
+                    # Capture old block before modification
+                    old_block = ''.join(current_block_lines)
+                    
+                    # Extract old value
+                    old_value = stripped_line.split(maxsplit=1)[1] if len(stripped_line.split()) > 1 else ""
                     new_value = config_parameters[current_param]
                     indentation = line[:len(line) - len(line.lstrip())]
                     line = f"{indentation}WERT {new_value}\n"
                     print(f"Updated {current_param} to {new_value} in {filename} at line {i+1}")
                     file_was_modified = True
-                    current_param = None
+                    
+                    # Build new block (replace WERT line in current block)
+                    new_block_lines = []
+                    for bl in current_block_lines[:-1]:  # Exclude current WERT line
+                        new_block_lines.append(bl)
+                    new_block_lines.append(line)
+                    
+                    # Track update with full blocks
+                    if track_updates:
+                        update_tracking.append({
+                            'file': file_path,
+                            'folder': directory,
+                            'parameter': current_param,
+                            'old_value': old_block.rstrip(),
+                            'new_value': '',  # Will be built when we hit END
+                            'status': 'Updated',
+                            '_building_new': new_block_lines
+                        })
                 
                 elif stripped_line.startswith('TEXT') and current_param and current_param in config_parameters:
+                    # Capture old block before modification
+                    old_block = ''.join(current_block_lines)
+                    
+                    # Extract old value
+                    old_value = stripped_line.split(maxsplit=1)[1] if len(stripped_line.split()) > 1 else ""
                     new_value = config_parameters[current_param]
                     indentation = line[:len(line) - len(line.lstrip())]
                     line = f"{indentation}TEXT {new_value}\n"
                     print(f"Updated {current_param} to {new_value} in {filename} at line {i+1}")
                     file_was_modified = True
-                    current_param = None
+                    
+                    # Build new block (replace TEXT line in current block)
+                    new_block_lines = []
+                    for bl in current_block_lines[:-1]:  # Exclude current TEXT line
+                        new_block_lines.append(bl)
+                    new_block_lines.append(line)
+                    
+                    # Track update with full blocks
+                    if track_updates:
+                        update_tracking.append({
+                            'file': file_path,
+                            'folder': directory,
+                            'parameter': current_param,
+                            'old_value': old_block.rstrip(),
+                            'new_value': '',  # Will be built when we hit END
+                            'status': 'Updated',
+                            '_building_new': new_block_lines
+                        })
                 
                 updated_lines.append(line)
+                
+                # When we hit END, complete the new_value block in tracking
+                if stripped_line == 'END' and track_updates and update_tracking:
+                    for track_entry in reversed(update_tracking):
+                        if '_building_new' in track_entry and not track_entry['new_value']:
+                            track_entry['_building_new'].append(line)
+                            track_entry['new_value'] = ''.join(track_entry['_building_new']).rstrip()
+                            del track_entry['_building_new']
+                            break
+                    current_param = None
+                    current_block_lines = []
             
             if file_was_modified:
                 try:
@@ -203,6 +353,133 @@ def update_files_in_directory(directory, config_parameters, file_extension=".dcm
                 except Exception as e:
                     print(f"Error writing to file {filename}: {e}")
     
+    if track_updates:
+        return updated_files, update_tracking
+    return updated_files
+
+def update_specific_files(file_list, config_parameters, track_updates=False):
+    """Update specific files directly (avoiding directory scan)."""
+    updated_files = []
+    update_tracking = []
+    keywords = ("KENNLINIE", "KENNFELD", "FESTWERT", "GRUPPENKENNLINIE")
+    
+    for file_path in file_list:
+        try:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    lines = file.readlines()
+                encoding_used = 'utf-8'
+            except UnicodeDecodeError:
+                with open(file_path, 'r', encoding='latin-1') as file:
+                    lines = file.readlines()
+                encoding_used = 'latin-1'
+        except Exception as e:
+            print(f"Error reading file {file_path}: {e}")
+            continue
+
+        updated_lines = []
+        current_param = None
+        current_block_lines = []
+        in_block = False
+        file_was_modified = False
+        
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+            
+            if stripped_line.startswith(keywords):
+                parts = stripped_line.split()
+                if len(parts) > 1:
+                    current_param = parts[1]
+                    in_block = True
+                    current_block_lines = [line]
+                    updated_lines.append(line)
+                    continue
+            
+            if in_block:
+                current_block_lines.append(line)
+                
+                if stripped_line == 'END':
+                    in_block = False
+                    if current_param not in config_parameters:
+                        current_param = None
+                        current_block_lines = []
+            
+            if stripped_line.startswith('WERT') and current_param and current_param in config_parameters:
+                # Capture old block before modification
+                old_block = ''.join(current_block_lines)
+                
+                new_value = config_parameters[current_param]
+                indentation = line[:len(line) - len(line.lstrip())]
+                line = f"{indentation}WERT {new_value}\n"
+                file_was_modified = True
+                
+                # Build new block
+                new_block_lines = []
+                for bl in current_block_lines[:-1]:
+                    new_block_lines.append(bl)
+                new_block_lines.append(line)
+                
+                if track_updates:
+                    update_tracking.append({
+                        'file': file_path,
+                        'folder': os.path.dirname(file_path),
+                        'parameter': current_param,
+                        'old_value': old_block.rstrip(),
+                        'new_value': '',
+                        'status': 'Updated',
+                        '_building_new': new_block_lines
+                    })
+            
+            elif stripped_line.startswith('TEXT') and current_param and current_param in config_parameters:
+                # Capture old block before modification
+                old_block = ''.join(current_block_lines)
+                
+                new_value = config_parameters[current_param]
+                indentation = line[:len(line) - len(line.lstrip())]
+                line = f"{indentation}TEXT {new_value}\n"
+                file_was_modified = True
+                
+                # Build new block
+                new_block_lines = []
+                for bl in current_block_lines[:-1]:
+                    new_block_lines.append(bl)
+                new_block_lines.append(line)
+                
+                if track_updates:
+                    update_tracking.append({
+                        'file': file_path,
+                        'folder': os.path.dirname(file_path),
+                        'parameter': current_param,
+                        'old_value': old_block.rstrip(),
+                        'new_value': '',
+                        'status': 'Updated',
+                        '_building_new': new_block_lines
+                    })
+            
+            updated_lines.append(line)
+            
+            # When we hit END, complete the new_value block in tracking
+            if stripped_line == 'END' and track_updates and update_tracking:
+                for track_entry in reversed(update_tracking):
+                    if '_building_new' in track_entry and not track_entry['new_value']:
+                        track_entry['_building_new'].append(line)
+                        track_entry['new_value'] = ''.join(track_entry['_building_new']).rstrip()
+                        del track_entry['_building_new']
+                        break
+                current_param = None
+                current_block_lines = []
+        
+        if file_was_modified:
+            try:
+                with open(file_path, 'w', encoding=encoding_used) as file:
+                    file.writelines(updated_lines)
+                updated_files.append(file_path)
+                print(f"Successfully updated file: {os.path.basename(file_path)}")
+            except Exception as e:
+                print(f"Error writing to file {os.path.basename(file_path)}: {e}")
+    
+    if track_updates:
+        return updated_files, update_tracking
     return updated_files
 
 def process_multiple_directories(directories, config_parameters, file_extension=".dcm"):
@@ -262,7 +539,6 @@ class MultiDirectoryDialog:
         self.path_combo['values'] = self.parent_folder_history
         if self.parent_folder_history:
             self.current_path_var.set(self.parent_folder_history[0])
-            self.load_subdirectories(self.parent_folder_history[0])
         self.path_combo.pack(fill=tk.X)
         self.path_combo.bind('<<ComboboxSelected>>', self.on_path_selected)
         
@@ -286,6 +562,10 @@ class MultiDirectoryDialog:
         self.available_listbox.bind('<Control-a>', self.select_all_available)
         self.available_listbox.bind('<Return>', self.add_selected_directories)
         self.available_listbox.bind('<Double-Button-1>', self.add_selected_directories)
+        
+        # Load subdirectories AFTER listbox is created
+        if self.parent_folder_history:
+            self.load_subdirectories(self.parent_folder_history[0])
         
         transfer_frame = tk.Frame(main_frame)
         transfer_frame.pack(fill=tk.X, pady=(0, 10))
@@ -548,8 +828,15 @@ class ParameterUpdateTool:
         
         self.selected_directories = []
         self.config_file_history = []
+        self.single_folder_history = []  # Initialize single folder history
         self._busy = False
         self._lock = threading.Lock()
+        
+        # Excel report tracking
+        self.update_history = []  # Track all parameter updates for Excel report
+        self.config_parameters = {}  # Store config parameters
+        self.file_contents_cache = {}  # Cache file contents for Excel generation
+        self.matching_files_cache = []  # Store list of files that need updating (avoid re-scanning)
         
         self.setup_gui()
         self.load_config()
@@ -632,6 +919,9 @@ class ParameterUpdateTool:
                   relief=tk.FLAT, cursor='hand2', pady=6).pack(side=tk.LEFT, padx=(0, 10))
         tk.Button(button_frame, text="2. Update Files", command=self.start_update,
                   bg=self.colors['success'], fg='white', width=16, font=('Segoe UI', 9, 'bold'),
+                  relief=tk.FLAT, cursor='hand2', pady=6).pack(side=tk.LEFT, padx=(0, 10))
+        tk.Button(button_frame, text="📊 Export Excel", command=self.export_excel_report,
+                  bg='#9C27B0', fg='white', width=16, font=('Segoe UI', 9, 'bold'),
                   relief=tk.FLAT, cursor='hand2', pady=6).pack(side=tk.LEFT)
 
         tk.Label(main_frame, text="Results:", font=('Segoe UI', 10, 'bold'),
@@ -805,6 +1095,9 @@ class ParameterUpdateTool:
                 logs.append(f"Loaded {len(config_parameters)} parameters.")
                 for p, v in config_parameters.items():
                     logs.append(f"  {p} -> {v}")
+                
+                # Store config parameters for later use
+                self.config_parameters = config_parameters
 
                 logs.append(f"\nScanning {len(self.selected_directories)} directories in parallel...")
                 all_matching = []
@@ -830,6 +1123,14 @@ class ParameterUpdateTool:
                     logs.append("\nNo files found with the specified parameters.")
                 else:
                     logs.append(f"\nTotal: {len(all_matching)} files would be updated.")
+                    
+                    # Cache matching files list and original file contents during preview
+                    logs.append("\nCaching original file contents...")
+                    self.matching_files_cache = all_matching  # Store matching files
+                    self.file_contents_cache = {}
+                    for file_path in all_matching:
+                        self.file_contents_cache[file_path] = extract_all_parameters_from_file(file_path)
+                    logs.append(f"Cached {len(self.file_contents_cache)} files with original values")
             except Exception as e:
                 logs.append(f"Error during preview: {e}")
             finally:
@@ -873,18 +1174,56 @@ class ParameterUpdateTool:
                 logs.append(f"Loaded {len(config_parameters)} parameters:")
                 for p, v in config_parameters.items():
                     logs.append(f"  {p} -> {v}")
+                
+                # Store config parameters for Excel export
+                self.config_parameters = config_parameters
 
-                logs.append(f"\nProcessing {len(self.selected_directories)} directories in parallel...")
-                all_matching, all_updated, per_dir = process_multiple_directories_parallel(
-                    self.selected_directories, config_parameters, ext, max_workers=8
-                )
-
-                if not all_matching:
-                    logs.append("No files found with the specified parameters.")
-                    self.root.after(0, lambda: self._finish_update(logs, all_matching, all_updated))
+                # Check if we already have matching files from preview
+                if self.matching_files_cache and self.file_contents_cache:
+                    logs.append(f"\nUsing cached file list from preview ({len(self.matching_files_cache)} files)")
+                    logs.append("Skipping file scan - updating cached files directly...")
+                    matching_files = self.matching_files_cache
+                else:
+                    logs.append(f"\nNo cached files found. Scanning files in {len(self.selected_directories)} directories...")
+                    # Cache original file contents BEFORE updating
+                    matching_files = []
+                    self.file_contents_cache = {}
+                    for directory in self.selected_directories:
+                        found_files = find_files_with_parameters(directory, config_parameters, ext)
+                        matching_files.extend(found_files)
+                        for file_path in found_files:
+                            self.file_contents_cache[file_path] = extract_all_parameters_from_file(file_path)
+                    logs.append(f"Cached {len(self.file_contents_cache)} files with original values")
+                
+                if not matching_files:
+                    logs.append("\nNo files found with the specified parameters.")
+                    self.root.after(0, lambda: self._finish_update(logs, [], []))
                     return
 
-                logs.append(f"\nFound {len(all_matching)} files containing target parameters.")
+                logs.append(f"\nUpdating {len(matching_files)} files in parallel...")
+                
+                # Update files directly with tracking
+                all_updated = []
+                all_tracking = []
+                
+                # Group files by directory for organized updates
+                files_by_dir = {} 
+                for file_path in matching_files:
+                    dir_path = os.path.dirname(file_path)
+                    if dir_path not in files_by_dir:
+                        files_by_dir[dir_path] = []
+                    files_by_dir[dir_path].append(file_path)
+                
+                # Update each directory's files
+                for dir_path, file_list in files_by_dir.items():
+                    updated, tracking = update_specific_files(file_list, config_parameters, track_updates=True)
+                    all_updated.extend(updated)
+                    all_tracking.extend(tracking)
+                
+                # Store update tracking data
+                self.update_history = all_tracking
+
+                logs.append(f"\nProcessed {len(matching_files)} files containing target parameters.")
                 if all_updated:
                     logs.append(f"\nUpdated {len(all_updated)} files:")
                     grouped = {}
@@ -897,7 +1236,7 @@ class ParameterUpdateTool:
                 else:
                     logs.append("No files required changes (values already correct).")
 
-                self.root.after(0, lambda: self._finish_update(logs, all_matching, all_updated))
+                self.root.after(0, lambda: self._finish_update(logs, matching_files, all_updated))
             except Exception as e:
                 logs.append(f"Error during update: {e}")
                 self.root.after(0, lambda: self._finish_update(logs, [], []))
@@ -912,6 +1251,346 @@ class ParameterUpdateTool:
         else:
             messagebox.showinfo("Info", "No files updated.")
         self._set_busy(False)
+
+    def generate_sheet_current_parameters(self, wb, file_params_cache, config_parameters):
+        """Generate Sheet 1: Parameters to Update with Current and Target Values"""
+        ws = wb.create_sheet("Parameters to Update", 0)
+        
+        # Define styles
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        found_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")  # Green
+        target_fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")  # Light yellow
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Set headers - Show Original Value (before update) and Target Value
+        headers = ["Parameter Name", "Original Value (Before Update)", "Target Value (Config)", "File Name", "Folder Path"]
+        ws.append(headers)
+        
+        # Style header row
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Set column widths
+        ws.column_dimensions['A'].width = 30  # Parameter Name
+        ws.column_dimensions['B'].width = 60  # Original Value
+        ws.column_dimensions['C'].width = 60  # Target Value 
+        ws.column_dimensions['D'].width = 25  # File Name
+        ws.column_dimensions['E'].width = 40  # Folder Path
+        
+        # Populate data - only parameters that exist in files
+        row_num = 2
+        
+        for param_name, target_value in config_parameters.items():
+            for file_path, all_params in file_params_cache.items():
+                file_name = os.path.basename(file_path)
+                folder_path = os.path.dirname(file_path)
+                
+                # Look for the parameter in this file
+                param_found = False
+                param_block = None
+                
+                for param_detail in all_params:
+                    if param_detail['name'] == param_name:
+                        param_found = True
+                        param_block = param_detail['block']
+                        break
+                
+                # Only add row if parameter exists in the file
+                if param_found:
+                    # Build target block by replacing WERT/TEXT line with new value
+                    target_block = ""
+                    if param_block:
+                        lines = param_block.split('\n')
+                        new_lines = []
+                        for line in lines:
+                            stripped = line.strip()
+                            if stripped.startswith('WERT') or stripped.startswith('TEXT'):
+                                # Replace with new value, keeping indentation
+                                indentation = line[:len(line) - len(line.lstrip())]
+                                keyword = 'WERT' if stripped.startswith('WERT') else 'TEXT'
+                                new_lines.append(f"{indentation}{keyword} {target_value}")
+                            else:
+                                new_lines.append(line)
+                        target_block = '\n'.join(new_lines)
+                    
+                    row_data = [param_name, param_block, target_block, file_name, folder_path]
+                    ws.append(row_data)
+                    
+                    # Apply formatting
+                    for col_idx, cell in enumerate(ws[row_num], 1):
+                        cell.border = border
+                        cell.alignment = Alignment(vertical="top", wrap_text=True)
+                        if col_idx == 2:  # Original Value - green
+                            cell.fill = found_fill
+                        elif col_idx == 3:  # Target Value - yellow highlight
+                            cell.fill = target_fill
+                            cell.font = Font(bold=True)
+                    
+                    row_num += 1
+        
+        ws.freeze_panes = "A2"
+    
+    def generate_sheet_folder_structure(self, wb, file_params_cache, config_parameters):
+        """Generate Sheet 2: Folder and File Structure"""
+        ws = wb.create_sheet("Folder Structure", 1)
+        
+        # Define styles
+        header_fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        folder_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Set headers
+        headers = ["Folder Path", "File Name", "Full File Path", "Parameters Found", "Parameter Count"]
+        ws.append(headers)
+        
+        # Style header row
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Set column widths
+        ws.column_dimensions['A'].width = 45
+        ws.column_dimensions['B'].width = 30
+        ws.column_dimensions['C'].width = 60
+        ws.column_dimensions['D'].width = 40
+        ws.column_dimensions['E'].width = 15
+        
+        # Group files by folder
+        folder_dict = {}
+        for file_path in file_params_cache.keys():
+            folder_path = os.path.dirname(file_path)
+            if folder_path not in folder_dict:
+                folder_dict[folder_path] = []
+            folder_dict[folder_path].append(file_path)
+        
+        # Populate data
+        row_num = 2
+        for folder_path in sorted(folder_dict.keys()):
+            for file_path in sorted(folder_dict[folder_path]):
+                file_name = os.path.basename(file_path)
+                all_params = file_params_cache[file_path]
+                param_names = [p['name'] for p in all_params]
+                param_count = len(param_names)
+                params_str = ", ".join(param_names[:5])
+                if param_count > 5:
+                    params_str += f"... (+{param_count - 5} more)"
+                
+                row_data = [folder_path, file_name, file_path, params_str, param_count]
+                ws.append(row_data)
+                
+                for cell in ws[row_num]:
+                    cell.border = border
+                    cell.alignment = Alignment(vertical="center", wrap_text=True)
+                    if cell.column == 1:
+                        cell.fill = folder_fill
+                        cell.font = Font(bold=True)
+                
+                row_num += 1
+        
+        ws.freeze_panes = "A2"
+    
+    def generate_sheet_update_comparison(self, wb, config_parameters):
+        """Generate Sheet 3: Update Comparison with Config Values"""
+        ws = wb.create_sheet("Update Comparison", 2)
+        
+        # Define styles
+        header_fill = PatternFill(start_color="FFC000", end_color="FFC000", fill_type="solid")
+        header_font = Font(bold=True, color="000000", size=11)
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        updated_fill = PatternFill(start_color="DDEBF7", end_color="DDEBF7", fill_type="solid")  # Blue
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        #Set headers
+        headers = ["Folder", "File", "Parameter", "Old Value", "New Value", "Status"]
+        ws.append(headers)
+        
+        # Style header row
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Set column widths
+        ws.column_dimensions['A'].width = 40  # Folder
+        ws.column_dimensions['B'].width = 25  # File
+        ws.column_dimensions['C'].width = 30  # Parameter
+        ws.column_dimensions['D'].width = 60  # Old Value
+        ws.column_dimensions['E'].width = 60  # New Value
+        ws.column_dimensions['F'].width = 12  # Status
+        
+        # Populate data from update history
+        row_num = 2
+        for entry in self.update_history:
+            folder = entry.get('folder', '')
+            file_name = os.path.basename(entry.get('file', ''))
+            parameter = entry.get('parameter', '')
+            old_value = entry.get('old_value', '')
+            new_value = entry.get('new_value', '')
+            status = entry.get('status', '')
+            
+            row_data = [folder, file_name, parameter, old_value, new_value, status]
+            ws.append(row_data)
+            
+            # Apply formatting
+            for cell in ws[row_num]:
+                cell.border = border
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+                cell.fill = updated_fill
+            
+            row_num += 1
+        
+        # If no update history, show message
+        if not self.update_history:
+            ws.append(["No update operations recorded yet.", "", "", "", "", ""])
+            ws['A2'].font = Font(italic=True, color="666666")
+        
+        ws.freeze_panes = "A2"
+    
+    def export_excel_report(self):
+        """Export comprehensive Excel report with 3 sheets"""
+        # Check if openpyxl is available
+        if not OPENPYXL_AVAILABLE:
+            messagebox.showerror("Error", 
+                "openpyxl library is not installed.\\n\\n"
+                "Please install it using:\\npip install openpyxl")
+            return
+        
+        # Check if config file is selected
+        config_path = self.list_file_combo.get().strip()
+        if not config_path or not os.path.isfile(config_path):
+            messagebox.showerror("Error", "Please select a valid config file first.")
+            return
+        
+        # Check if directories are selected
+        if not self.selected_directories:
+            messagebox.showerror("Error", "Please select directories first.")
+            return
+        
+        try:
+            self.log_message("Starting Excel report generation...")
+            self.root.update()
+            
+            # Load config parameters
+            self.config_parameters = read_config_file(config_path)
+            if not self.config_parameters:
+                messagebox.showerror("Error", "No valid parameters found in config file.")
+                return
+            
+            self.log_message(f"Loaded {len(self.config_parameters)} parameters from config")
+            
+            # Use cached original values if available (from before update), otherwise read files now
+            if self.file_contents_cache:
+                self.log_message(f"Using cached original values from {len(self.file_contents_cache)} files")
+                file_params_cache = self.file_contents_cache
+                file_count = len(file_params_cache)
+            else:
+                # Find only files that contain the parameters to update
+                self.log_message(f"Finding files with target parameters in {len(self.selected_directories)} directories...")
+                self.root.update()
+                
+                ext = self.extension_var.get()
+                matching_files = []
+                
+                for directory in self.selected_directories:
+                    files_in_dir = find_files_with_parameters(directory, self.config_parameters, ext)
+                    matching_files.extend(files_in_dir)
+                
+                self.log_message(f"Found {len(matching_files)} files containing target parameters")
+                self.root.update()
+                
+                # Pre-extract parameters only from matching files
+                file_params_cache = {}
+                file_count = 0
+                
+                for file_path in matching_files:
+                    file_params_cache[file_path] = extract_all_parameters_from_file(file_path)
+                    file_count += 1
+                    
+                    if file_count % 10 == 0:
+                        self.log_message(f"  Processed {file_count} files...")
+                        self.root.update()
+            
+            total_params = sum(len(params) for params in file_params_cache.values())
+            self.log_message(f"Extracted {total_params} total parameters from {file_count} files")
+            self.root.update()
+            
+            # Create Report folder
+            report_folder = os.path.join(os.path.dirname(__file__), 'Report')
+            if not os.path.exists(report_folder):
+                os.makedirs(report_folder)
+                self.log_message(f"Created Report folder: {report_folder}")
+            
+            # Create workbook
+            wb = Workbook()
+            if 'Sheet' in wb.sheetnames:
+                wb.remove(wb['Sheet'])
+            
+            # Generate all sheets
+            self.log_message("Generating Sheet 1: Current Parameters...")
+            self.root.update()
+            self.generate_sheet_current_parameters(wb, file_params_cache, self.config_parameters)
+            
+            self.log_message("Generating Sheet 2: Folder Structure...")
+            self.root.update()
+            self.generate_sheet_folder_structure(wb, file_params_cache, self.config_parameters)
+            
+            self.log_message("Generating Sheet 3: Update Comparison...")
+            self.root.update()
+            self.generate_sheet_update_comparison(wb, self.config_parameters)
+            
+            # Save workbook
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            excel_filename = f"Update_Report_{timestamp}.xlsx"
+            excel_path = os.path.join(report_folder, excel_filename)
+            
+            self.log_message("Saving Excel file...")
+            self.root.update()
+            wb.save(excel_path)
+            
+            self.log_message(f"Excel report saved successfully!")
+            self.log_message(f"Location: {excel_path}")
+            
+            messagebox.showinfo("Success", 
+                f"Excel report generated successfully!\\n\\n"
+                f"File: {excel_filename}\\n"
+                f"Location: {report_folder}\\n\\n"
+                f"Total files analyzed: {file_count}\\n"
+                f"Parameters tracked: {len(self.config_parameters)}\\n"
+                f"Update operations: {len(self.update_history)}")
+            
+            # Optional: Open folder
+            if messagebox.askyesno("Open Folder", "Do you want to open the Report folder?"):
+                os.startfile(report_folder)
+                
+        except Exception as e:
+            error_msg = f"Error generating Excel report: {str(e)}"
+            self.log_message(error_msg)
+            messagebox.showerror("Export Error", error_msg)
 
 if __name__ == "__main__":
     root = tk.Tk()
