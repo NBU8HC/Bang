@@ -19,9 +19,9 @@
    'DATA'),
   ('Drift.gif', 'D:\\Python\\Tool parameter\\Drift.gif', 'DATA'),
   ('Nuclearbomb.gif', 'D:\\Python\\Tool parameter\\Nuclearbomb.gif', 'DATA'),
-  ('Split_parameter_tool\\split_parameter.exe',
+  ('Split_parameter_tool\\split_parameter_pro.exe',
    'D:\\Python\\Tool '
-   'parameter\\Split_parameter_tool\\dist\\split_parameter.exe',
+   'parameter\\Split_parameter_tool\\dist\\split_parameter_pro.exe',
    'DATA'),
   ('update_parameter\\dcm_parameter_tool.exe',
    'D:\\Python\\Tool parameter\\update_parameter\\dist\\dcm_parameter_tool.exe',
@@ -336,14 +336,14 @@
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyInstaller\\fake-modules\\_pyi_rth_utils\\__init__.py',
    'PYMODULE'),
+  ('_py_abc',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_py_abc.py',
+   'PYMODULE'),
   ('tracemalloc',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\tracemalloc.py',
    'PYMODULE'),
   ('stringprep',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\stringprep.py',
-   'PYMODULE'),
-  ('_py_abc',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_py_abc.py',
    'PYMODULE'),
   ('PyQt5',
    'D:\\Python\\Tool parameter\\.venv\\Lib\\site-packages\\PyQt5\\__init__.py',
@@ -357,9 +357,9 @@
  [('Add_new_parameter\\add_new_parameter.exe',
    'D:\\Python\\Tool parameter\\Add_new_parameter\\dist\\add_new_parameter.exe',
    'BINARY'),
-  ('Split_parameter_tool\\split_parameter.exe',
+  ('Split_parameter_tool\\split_parameter_pro.exe',
    'D:\\Python\\Tool '
-   'parameter\\Split_parameter_tool\\dist\\split_parameter.exe',
+   'parameter\\Split_parameter_tool\\dist\\split_parameter_pro.exe',
    'BINARY'),
   ('update_parameter\\dcm_parameter_tool.exe',
    'D:\\Python\\Tool parameter\\update_parameter\\dist\\dcm_parameter_tool.exe',
@@ -367,73 +367,61 @@
   ('python311.dll',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\python311.dll',
    'BINARY'),
+  ('PyQt5\\Qt5\\bin\\libEGL.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\libEGL.dll',
+   'BINARY'),
   ('PyQt5\\Qt5\\bin\\libGLESv2.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\libGLESv2.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\bin\\d3dcompiler_47.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\bin\\opengl32sw.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\opengl32sw.dll',
    'BINARY'),
-  ('PyQt5\\Qt5\\bin\\libEGL.dll',
+  ('PyQt5\\Qt5\\bin\\d3dcompiler_47.dll',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\libEGL.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\imageformats\\qtga.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qtga.dll',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\plugins\\imageformats\\qjpeg.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qjpeg.dll',
    'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\imageformats\\qsvg.dll',
+  ('PyQt5\\Qt5\\plugins\\platforms\\qwindows.dll',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qsvg.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\imageformats\\qico.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qico.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\imageformats\\qgif.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qgif.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\generic\\qtuiotouchplugin.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\generic\\qtuiotouchplugin.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\platforms\\qwebgl.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms\\qwebgl.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\iconengines\\qsvgicon.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\iconengines\\qsvgicon.dll',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms\\qwindows.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\plugins\\imageformats\\qwebp.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qwebp.dll',
    'BINARY'),
+  ('PyQt5\\Qt5\\plugins\\imageformats\\qtga.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qtga.dll',
+   'BINARY'),
+  ('PyQt5\\Qt5\\plugins\\iconengines\\qsvgicon.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\iconengines\\qsvgicon.dll',
+   'BINARY'),
   ('PyQt5\\Qt5\\plugins\\platforms\\qoffscreen.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms\\qoffscreen.dll',
    'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\imageformats\\qicns.dll',
+  ('PyQt5\\Qt5\\plugins\\imageformats\\qwbmp.dll',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qicns.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\platforms\\qwindows.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms\\qwindows.dll',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qwbmp.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\plugins\\imageformats\\qtiff.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qtiff.dll',
+   'BINARY'),
+  ('PyQt5\\Qt5\\plugins\\generic\\qtuiotouchplugin.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\generic\\qtuiotouchplugin.dll',
+   'BINARY'),
+  ('PyQt5\\Qt5\\plugins\\imageformats\\qgif.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qgif.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\plugins\\platformthemes\\qxdgdesktopportal.dll',
    'D:\\Python\\Tool '
@@ -443,9 +431,21 @@
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms\\qminimal.dll',
    'BINARY'),
-  ('PyQt5\\Qt5\\plugins\\imageformats\\qwbmp.dll',
+  ('PyQt5\\Qt5\\plugins\\platforms\\qwebgl.dll',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qwbmp.dll',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms\\qwebgl.dll',
+   'BINARY'),
+  ('PyQt5\\Qt5\\plugins\\imageformats\\qsvg.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qsvg.dll',
+   'BINARY'),
+  ('PyQt5\\Qt5\\plugins\\imageformats\\qicns.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qicns.dll',
+   'BINARY'),
+  ('PyQt5\\Qt5\\plugins\\imageformats\\qico.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats\\qico.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\plugins\\styles\\qwindowsvistastyle.dll',
    'D:\\Python\\Tool '
@@ -489,58 +489,6 @@
   ('VCRUNTIME140.dll',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\VCRUNTIME140.dll',
    'BINARY'),
-  ('api-ms-win-crt-convert-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-convert-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-time-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-time-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-filesystem-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-filesystem-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-math-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-math-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-runtime-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-runtime-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-locale-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-locale-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-process-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-process-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-stdio-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-stdio-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-heap-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-heap-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-string-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-string-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-environment-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-environment-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-crt-conio-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-conio-l1-1-0.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\bin\\VCRUNTIME140_1.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\VCRUNTIME140_1.dll',
-   'BINARY'),
   ('PyQt5\\Qt5\\bin\\VCRUNTIME140.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\VCRUNTIME140.dll',
@@ -548,6 +496,10 @@
   ('PyQt5\\Qt5\\bin\\MSVCP140.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\MSVCP140.dll',
+   'BINARY'),
+  ('PyQt5\\Qt5\\bin\\VCRUNTIME140_1.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\VCRUNTIME140_1.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\bin\\Qt5Gui.dll',
    'D:\\Python\\Tool '
@@ -557,6 +509,9 @@
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5Core.dll',
    'BINARY'),
+  ('VCRUNTIME140_1.dll',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\VCRUNTIME140_1.dll',
+   'BINARY'),
   ('PyQt5\\Qt5\\bin\\Qt5Svg.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5Svg.dll',
@@ -565,24 +520,17 @@
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5Network.dll',
    'BINARY'),
-  ('PyQt5\\Qt5\\bin\\Qt5WebSockets.dll',
+  ('PyQt5\\Qt5\\bin\\Qt5DBus.dll',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5WebSockets.dll',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5DBus.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\bin\\Qt5Quick.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5Quick.dll',
    'BINARY'),
-  ('api-ms-win-crt-utility-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-crt-utility-l1-1-0.dll',
-   'BINARY'),
-  ('VCRUNTIME140_1.dll',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\VCRUNTIME140_1.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\bin\\Qt5DBus.dll',
+  ('PyQt5\\Qt5\\bin\\Qt5WebSockets.dll',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5DBus.dll',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5WebSockets.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\bin\\Qt5Widgets.dll',
    'D:\\Python\\Tool '
@@ -594,168 +542,201 @@
   ('python3.dll',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\python3.dll',
    'BINARY'),
-  ('ucrtbase.dll',
-   'C:\\Program Files\\RedHat\\java-1.8.0-openjdk\\bin\\ucrtbase.dll',
-   'BINARY'),
   ('PyQt5\\Qt5\\bin\\MSVCP140_1.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\MSVCP140_1.dll',
-   'BINARY'),
-  ('PyQt5\\Qt5\\bin\\Qt5QmlModels.dll',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5QmlModels.dll',
    'BINARY'),
   ('PyQt5\\Qt5\\bin\\Qt5Qml.dll',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5Qml.dll',
    'BINARY'),
-  ('api-ms-win-core-synch-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-synch-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-libraryloader-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-libraryloader-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-processthreads-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-processthreads-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-localization-l1-2-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-localization-l1-2-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-profile-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-profile-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-synch-l1-2-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-synch-l1-2-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-debug-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-debug-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-handle-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-handle-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-string-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-string-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-file-l1-2-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-file-l1-2-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-interlocked-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-interlocked-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-namedpipe-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-namedpipe-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-processthreads-l1-1-1.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-processthreads-l1-1-1.dll',
-   'BINARY'),
-  ('api-ms-win-core-timezone-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-timezone-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-file-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-file-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-util-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-util-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-heap-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-heap-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-datetime-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-datetime-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-processenvironment-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-processenvironment-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-errorhandling-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-errorhandling-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-console-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-console-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-memory-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-memory-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-rtlsupport-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-rtlsupport-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-sysinfo-l1-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-sysinfo-l1-1-0.dll',
-   'BINARY'),
-  ('api-ms-win-core-file-l2-1-0.dll',
-   'C:\\Program '
-   'Files\\RedHat\\java-1.8.0-openjdk\\bin\\api-ms-win-core-file-l2-1-0.dll',
+  ('PyQt5\\Qt5\\bin\\Qt5QmlModels.dll',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\Qt5QmlModels.dll',
    'BINARY')],
  [],
  [],
  [('Drift.gif', 'D:\\Python\\Tool parameter\\Drift.gif', 'DATA'),
   ('Nuclearbomb.gif', 'D:\\Python\\Tool parameter\\Nuclearbomb.gif', 'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_gl.qm',
+  ('PyQt5\\Qt5\\translations\\qt_pt.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_gl.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_pt.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_ja.qm',
+  ('PyQt5\\Qt5\\translations\\qt_ru.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ja.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ru.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_uk.qm',
+  ('PyQt5\\Qt5\\translations\\qt_zh_CN.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_uk.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_zh_CN.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_fr.qm',
+  ('PyQt5\\Qt5\\translations\\qt_fi.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_fr.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_fi.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_it.qm',
+  ('PyQt5\\Qt5\\translations\\qt_en.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_it.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_ar.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_ar.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_sv.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_sv.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_en.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_en.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_es.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_es.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_en.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qtbase_ja.qm',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_ja.qm',
    'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_de.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_de.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_sl.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_sl.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_cs.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_cs.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_zh_TW.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_zh_TW.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_es.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_es.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_ar.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_ar.qm',
+   'DATA'),
   ('PyQt5\\Qt5\\translations\\qtbase_uk.qm',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_uk.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_zh_TW.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_zh_TW.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_zh_TW.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_zh_TW.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_es.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_es.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_tr.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_tr.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_ca.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ca.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_fa.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_fa.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_ko.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ko.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_uk.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_uk.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_pl.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_pl.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_en.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_en.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_sv.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_sv.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_ru.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ru.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_lv.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_lv.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_hu.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_hu.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_fr.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_fr.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_sk.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_sk.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_de.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_de.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_ca.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_ca.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_sl.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_sl.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_es.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_es.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_da.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_da.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_it.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_it.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_ca.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ca.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_tr.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_tr.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_gd.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_gd.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_fr.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_fr.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_ar.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ar.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_hu.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_hu.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_uk.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_uk.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_ru.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_ru.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qt_help_hu.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_hu.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_bg.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_bg.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qtbase_gd.qm',
    'D:\\Python\\Tool '
@@ -765,97 +746,45 @@
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_gl.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_pl.qm',
+  ('PyQt5\\Qt5\\translations\\qt_help_da.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_pl.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_da.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_en.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_en.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qtbase_he.qm',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_he.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_en.qm',
+  ('PyQt5\\Qt5\\translations\\qt_ko.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_en.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_zh_TW.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_zh_TW.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_tr.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_tr.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_bg.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_bg.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_zh_TW.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_zh_TW.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_tr.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_tr.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_cs.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_cs.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_es.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_es.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ko.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qt_help_cs.qm',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_cs.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_ko.qm',
+  ('PyQt5\\Qt5\\translations\\qt_bg.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ko.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_bg.qm',
+   'DATA'),
+  ('PyQt5\\Qt5\\translations\\qtbase_ko.qm',
+   'D:\\Python\\Tool '
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_ko.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qtbase_da.qm',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_da.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_ca.qm',
+  ('PyQt5\\Qt5\\translations\\qt_help_ja.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ca.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ja.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_da.qm',
+  ('PyQt5\\Qt5\\translations\\qt_ar.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_da.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_tr.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_tr.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_sl.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_sl.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_zh_CN.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_zh_CN.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_bg.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_bg.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_ja.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ja.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_hu.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_hu.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_fr.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_fr.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_de.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_de.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ar.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qt_help_sk.qm',
    'D:\\Python\\Tool '
@@ -865,210 +794,156 @@
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_lt.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_hu.qm',
+  ('PyQt5\\Qt5\\translations\\qt_help_gl.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_hu.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_gl.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qtbase_de.qm',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_de.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_pl.qm',
+  ('PyQt5\\Qt5\\translations\\qt_ja.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_pl.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_ca.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ca.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_sk.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_sk.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_cs.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_cs.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_fi.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_fi.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_zh_CN.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_zh_CN.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_he.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_he.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_hu.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_hu.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_it.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_it.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_zh_TW.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_zh_TW.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_it.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_it.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_ar.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ar.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_lv.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_lv.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_de.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_de.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ja.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qt_help_bg.qm',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_bg.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_sl.qm',
+  ('PyQt5\\Qt5\\translations\\qt_fr.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_sl.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_pt.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_pt.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_gd.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_gd.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_uk.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_uk.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_ru.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_ru.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_fr.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_fr.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_fr.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qt_help_pl.qm',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_pl.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_ru.qm',
+  ('PyQt5\\Qt5\\translations\\qt_sk.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ru.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_sk.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_ko.qm',
+  ('PyQt5\\Qt5\\translations\\qtbase_cs.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_ko.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_cs.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_ca.qm',
+  ('PyQt5\\Qt5\\translations\\qt_he.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_ca.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_he.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qtbase_lv.qm',
+  ('PyQt5\\Qt5\\translations\\qt_tr.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_lv.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_tr.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_fa.qm',
+  ('PyQt5\\Qt5\\translations\\qt_lv.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_fa.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_lv.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_es.qm',
+  ('PyQt5\\Qt5\\translations\\qt_help_zh_CN.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_es.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_zh_CN.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_ar.qm',
+  ('PyQt5\\Qt5\\translations\\qtbase_it.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_ar.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_it.qm',
    'DATA'),
   ('PyQt5\\Qt5\\translations\\qtbase_fi.qm',
    'D:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qtbase_fi.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_ko.qm',
+  ('PyQt5\\Qt5\\translations\\qt_it.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ko.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_it.qm',
    'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_ru.qm',
+  ('PyQt5\\Qt5\\translations\\qt_pl.qm',
    'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_ru.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_en.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_en.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_sk.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_sk.qm',
-   'DATA'),
-  ('PyQt5\\Qt5\\translations\\qt_help_da.qm',
-   'D:\\Python\\Tool '
-   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_help_da.qm',
+   'parameter\\.venv\\Lib\\site-packages\\PyQt5\\Qt5\\translations\\qt_pl.qm',
    'DATA'),
   ('base_library.zip',
    'D:\\Python\\Tool parameter\\build\\main_gui\\base_library.zip',
    'DATA')],
- [('types',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\types.py',
+ [('sre_compile',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\sre_compile.py',
    'PYMODULE'),
   ('weakref',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\weakref.py',
    'PYMODULE'),
-  ('reprlib',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\reprlib.py',
-   'PYMODULE'),
-  ('copyreg',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\copyreg.py',
-   'PYMODULE'),
-  ('linecache',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\linecache.py',
-   'PYMODULE'),
-  ('posixpath',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\posixpath.py',
-   'PYMODULE'),
-  ('functools',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\functools.py',
-   'PYMODULE'),
   ('genericpath',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\genericpath.py',
+   'PYMODULE'),
+  ('locale',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\locale.py',
+   'PYMODULE'),
+  ('_weakrefset',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_weakrefset.py',
    'PYMODULE'),
   ('sre_constants',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\sre_constants.py',
    'PYMODULE'),
-  ('operator',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\operator.py',
+  ('abc',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\abc.py',
    'PYMODULE'),
-  ('sre_compile',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\sre_compile.py',
+  ('posixpath',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\posixpath.py',
+   'PYMODULE'),
+  ('types',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\types.py',
+   'PYMODULE'),
+  ('_collections_abc',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_collections_abc.py',
+   'PYMODULE'),
+  ('re._parser',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\_parser.py',
+   'PYMODULE'),
+  ('re._constants',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\_constants.py',
+   'PYMODULE'),
+  ('re._compiler',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\_compiler.py',
+   'PYMODULE'),
+  ('re._casefix',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\_casefix.py',
+   'PYMODULE'),
+  ('re',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\__init__.py',
+   'PYMODULE'),
+  ('copyreg',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\copyreg.py',
    'PYMODULE'),
   ('traceback',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\traceback.py',
    'PYMODULE'),
-  ('codecs',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\codecs.py',
+  ('collections.abc',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\collections\\abc.py',
    'PYMODULE'),
-  ('io',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\io.py',
-   'PYMODULE'),
-  ('stat',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\stat.py',
-   'PYMODULE'),
-  ('sre_parse',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\sre_parse.py',
+  ('collections',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\collections\\__init__.py',
    'PYMODULE'),
   ('warnings',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\warnings.py',
    'PYMODULE'),
-  ('heapq',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\heapq.py',
+  ('sre_parse',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\sre_parse.py',
+   'PYMODULE'),
+  ('functools',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\functools.py',
+   'PYMODULE'),
+  ('keyword',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\keyword.py',
+   'PYMODULE'),
+  ('operator',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\operator.py',
+   'PYMODULE'),
+  ('codecs',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\codecs.py',
+   'PYMODULE'),
+  ('stat',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\stat.py',
+   'PYMODULE'),
+  ('io',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\io.py',
+   'PYMODULE'),
+  ('linecache',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\linecache.py',
    'PYMODULE'),
   ('ntpath',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\ntpath.py',
@@ -1439,44 +1314,14 @@
   ('encodings',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\encodings\\__init__.py',
    'PYMODULE'),
-  ('_collections_abc',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_collections_abc.py',
-   'PYMODULE'),
-  ('keyword',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\keyword.py',
-   'PYMODULE'),
-  ('collections.abc',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\collections\\abc.py',
-   'PYMODULE'),
-  ('collections',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\collections\\__init__.py',
-   'PYMODULE'),
-  ('abc',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\abc.py',
-   'PYMODULE'),
-  ('locale',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\locale.py',
-   'PYMODULE'),
   ('enum',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\enum.py',
    'PYMODULE'),
-  ('re._parser',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\_parser.py',
+  ('heapq',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\heapq.py',
    'PYMODULE'),
-  ('re._constants',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\_constants.py',
-   'PYMODULE'),
-  ('re._compiler',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\_compiler.py',
-   'PYMODULE'),
-  ('re._casefix',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\_casefix.py',
-   'PYMODULE'),
-  ('re',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\re\\__init__.py',
-   'PYMODULE'),
-  ('_weakrefset',
-   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_weakrefset.py',
+  ('reprlib',
+   'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\reprlib.py',
    'PYMODULE'),
   ('os',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\os.py',
