@@ -59,11 +59,11 @@ class MainWindow(QWidget):
         else:
             self.gif_label.setText("Không thể load Drift.gif")
 
-        # Các nút và tool như cũ ...
+        # Tools menu - Updated with latest exe files
         tools = [
             ("Add New Parameter", "Add_new_parameter/add_new_parameter.exe"),
-            ("Split Parameter Tool", "Split_parameter_tool/ParameterClonerPro.exe"),
-            ("Update Parameter Tool", "Update_parameter/dcm_parameter_tool.exe")
+            ("Split Parameter Pro", "Split_parameter_tool/split_parameter_pro.exe"),
+            ("Update Parameter Tool", "update_parameter/dcm_parameter_tool.exe")
         ]
 
         for label, exe_path in tools:

@@ -131,7 +131,6 @@ class MainWindow(QWidget):
 
         self.buttons = []
         button_configs = [
-            ("Add New Parameter", self.colors['success'], "➕"),
             ("Split Parameter Tool", self.colors['primary'], "✂️"),
             ("Update Parameter Tool", self.colors['warning'], "🔄")
         ]
@@ -183,9 +182,8 @@ class MainWindow(QWidget):
         self._is_maximized = False
 
         # Kết nối nút
-        self.buttons[0].clicked.connect(self.open_add_new_parameter)
-        self.buttons[1].clicked.connect(self.open_split_parameter)
-        self.buttons[2].clicked.connect(self.open_update_parameter)
+        self.buttons[0].clicked.connect(self.open_split_parameter)
+        self.buttons[1].clicked.connect(self.open_update_parameter)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -195,10 +193,32 @@ class MainWindow(QWidget):
         self.update()
 
     def run_tool_exe(self, exe_relative_path, tool_name="Tool"):
-        """Chạy tool exe - tìm trong _MEIPASS hoặc thư mục hiện tại"""
-        exe_path = resource_path(exe_relative_path)
+        """Chạy tool exe - tự động tìm exe trong nhiều vị trí"""
+        # Danh sách các vị trí có thể tìm exe
+        search_paths = []
         
-        if not os.path.isfile(exe_path):
+        # 1. Thư mục của main_gui.exe (khi copy cùng thư mục với các tool)
+        if getattr(sys, 'frozen', False):
+            # Khi chạy như exe, sys.executable là path của exe
+            exe_dir = os.path.dirname(sys.executable)
+            search_paths.append(os.path.join(exe_dir, exe_relative_path))
+        
+        # 2. Embedded resource trong _MEIPASS (PyInstaller)
+        if hasattr(sys, '_MEIPASS'):
+            search_paths.append(os.path.join(sys._MEIPASS, exe_relative_path))
+        
+        # 3. Thư mục hiện tại (khi chạy từ source code)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        search_paths.append(os.path.join(script_dir, exe_relative_path))
+        
+        # Tìm exe trong các vị trí
+        exe_path = None
+        for path in search_paths:
+            if os.path.isfile(path):
+                exe_path = path
+                break
+        
+        if not exe_path:
             msg = QMessageBox(self)
             msg.setIcon(QMessageBox.Critical)
             msg.setWindowTitle("File Not Found")
@@ -259,23 +279,11 @@ class MainWindow(QWidget):
             """)
             msg.exec_()
 
-    def open_add_new_parameter(self):
-        self.run_tool_exe(
-            os.path.join("Add_new_parameter", "dist", "add_new_parameter.exe"),
-            "Add New Parameter Tool"
-        )
-
     def open_split_parameter(self):
-        self.run_tool_exe(
-            os.path.join("Split_parameter_tool", "dist", "ParameterClonerPro.exe"),
-            "Split Parameter Tool"
-        )
+        self.run_tool_exe("split_parameter_pro.exe", "Split Parameter Tool")
 
     def open_update_parameter(self):
-        self.run_tool_exe(
-            os.path.join("update_parameter", "dist", "dcm_parameter_tool.exe"),
-            "Update Parameter Tool"
-        )
+        self.run_tool_exe("dcm_parameter_tool.exe", "Update Parameter Tool")
 
 def main():
     app = QApplication(sys.argv)

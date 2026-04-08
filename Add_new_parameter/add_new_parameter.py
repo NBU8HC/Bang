@@ -184,15 +184,15 @@ class MultiDirectoryDialog:
                 self.save_parent_history()
             
     def load_subdirectories(self, parent_dir):
-        """Load subdirectories of the parent directory."""
+        """Load subdirectories of the parent directory recursively."""
         self.available_listbox.delete(0, tk.END)
         try:
-            items = os.listdir(parent_dir)
             directories = []
-            for item in items:
-                item_path = os.path.join(parent_dir, item)
-                if os.path.isdir(item_path):
-                    directories.append(item_path)
+            # Use os.walk to recursively find all subdirectories
+            for root, dirs, files in os.walk(parent_dir):
+                for dir_name in dirs:
+                    dir_path = os.path.join(root, dir_name)
+                    directories.append(dir_path)
             
             directories.sort()
             for directory in directories:

@@ -1,6 +1,6 @@
 ('D:\\Python\\Tool parameter\\build\\main_gui\\PYZ-00.pyz',
  [('PyQt5',
-   'D:\\Python\\Tool parameter\\.venv\\Lib\\site-packages\\PyQt5\\__init__.py',
+   'd:\\Python\\Tool parameter\\.venv\\Lib\\site-packages\\PyQt5\\__init__.py',
    'PYMODULE'),
   ('_compat_pickle',
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_compat_pickle.py',
@@ -15,11 +15,11 @@
    'C:\\Users\\NBU8HC\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_pydecimal.py',
    'PYMODULE'),
   ('_pyi_rth_utils',
-   'D:\\Python\\Tool '
+   'd:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyInstaller\\fake-modules\\_pyi_rth_utils\\__init__.py',
    'PYMODULE'),
   ('_pyi_rth_utils.qt',
-   'D:\\Python\\Tool '
+   'd:\\Python\\Tool '
    'parameter\\.venv\\Lib\\site-packages\\PyInstaller\\fake-modules\\_pyi_rth_utils\\qt.py',
    'PYMODULE'),
   ('_strptime',

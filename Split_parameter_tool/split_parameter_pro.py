@@ -6,6 +6,7 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 import threading
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 try:
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -353,12 +354,12 @@ class MultiDirectoryDialog:
     def load_subdirectories(self, parent_dir):
         self.available_listbox.delete(0, tk.END)
         try:
-            items = os.listdir(parent_dir)
             directories = []
-            for item in items:
-                item_path = os.path.join(parent_dir, item)
-                if os.path.isdir(item_path):
-                    directories.append(item_path)
+            # Use os.walk to recursively find all subdirectories
+            for root, dirs, files in os.walk(parent_dir):
+                for dir_name in dirs:
+                    dir_path = os.path.join(root, dir_name)
+                    directories.append(dir_path)
             
             directories.sort()
             for directory in directories:
@@ -866,53 +867,84 @@ class ParameterClonerApp:
         dir_label.pack(pady=5)
         
         def scan_thread():
+            # Pre-compile regex patterns for faster matching
+            compiled_patterns = []
+            for param in self.parameter_list:
+                compiled_patterns.extend([
+                    re.compile(r'KENNLINIE\s+' + re.escape(param) + r'\s+'),
+                    re.compile(r'KENNFELD\s+' + re.escape(param) + r'\s+'),
+                    re.compile(r'FESTWERT\s+' + re.escape(param) + r'\s+'),
+                    re.compile(r'GRUPPENKENNLINIE\s+' + re.escape(param) + r'\s+')
+                ])
+            
             found_files = []
-            total_files = 0
+            found_files_lock = threading.Lock()
             processed_files = 0
+            processed_lock = threading.Lock()
             
+            # Collect all files first
+            all_files = []
             for directory in directories:
-                dir_label.config(text=f"Counting files in: {os.path.basename(directory)}")
-                progress_window.update_idletasks()
-                for root, dirs, files in os.walk(directory):
-                    total_files += len(files)
-            
-            for directory in directories:
-                dir_label.config(text=f"Scanning in: {os.path.basename(directory)}")
-                progress_window.update_idletasks()
-                
                 for root, dirs, files in os.walk(directory):
                     for file_name in files:
+                        # Skip non-DCM files early for speed
+                        if not file_name.lower().endswith(('.dcm', '.cfg', '.txt')):
+                            continue
                         file_path = os.path.join(root, file_name)
+                        all_files.append(file_path)
+            
+            total_files = len(all_files)
+            status_label.config(text=f"Found {total_files} files to scan...")
+            progress_window.update_idletasks()
+            
+            def scan_file(file_path):
+                """Scan a single file for parameters"""
+                try:
+                    # Skip large files
+                    if os.path.getsize(file_path) > 10_000_000:
+                        return None
+                except:
+                    return None
+                
+                try:
+                    with open(file_path, 'r', errors='ignore') as f:
+                        content = f.read()
+                    
+                    # Check if any pattern matches
+                    for pattern in compiled_patterns:
+                        if pattern.search(content):
+                            return file_path
+                    
+                except Exception:
+                    pass
+                
+                return None
+            
+            # Parallel scanning with ThreadPoolExecutor
+            max_workers = min(8, os.cpu_count() or 4)
+            update_interval = max(1, total_files // 100)  # Update UI every 1% progress
+            
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Submit all files for scanning
+                future_to_file = {executor.submit(scan_file, fp): fp for fp in all_files}
+                
+                for future in as_completed(future_to_file):
+                    result = future.result()
+                    
+                    with processed_lock:
                         processed_files += 1
                         
-                        progress = (processed_files / total_files) * 100 if total_files > 0 else 0
-                        progress_var.set(progress)
-                        status_label.config(text=f"Scanning: {file_name}")
-                        progress_window.update_idletasks()
-                        
-                        try:
-                            if os.path.getsize(file_path) > 10_000_000:
-                                continue
-                        except:
-                            continue
-                            
-                        try:
-                            with open(file_path, 'r', errors='ignore') as f:
-                                content = f.read()
-                                
-                            for param in self.parameter_list:
-                                if any(pattern.search(content) for pattern in [
-                                    re.compile(r'KENNLINIE\s+' + re.escape(param) + r'\s+'),
-                                    re.compile(r'KENNFELD\s+' + re.escape(param) + r'\s+'),
-                                    re.compile(r'FESTWERT\s+' + re.escape(param) + r'\s+'),
-                                    re.compile(r'GRUPPENKENNLINIE\s+' + re.escape(param) + r'\s+')
-                                ]):
-                                    if file_path not in found_files:
-                                        found_files.append(file_path)
-                                    break
-                                    
-                        except Exception:
-                            continue
+                        # Update UI periodically (not every file to avoid slowdown)
+                        if processed_files % update_interval == 0 or processed_files == total_files:
+                            progress = (processed_files / total_files) * 100
+                            progress_var.set(progress)
+                            status_label.config(text=f"Scanning... {processed_files}/{total_files}")
+                            progress_window.update_idletasks()
+                    
+                    if result:
+                        with found_files_lock:
+                            if result not in found_files:
+                                found_files.append(result)
            
             # Update UI with results
             def update_ui():
@@ -929,7 +961,7 @@ class ParameterClonerApp:
                         self.file_listbox.insert(tk.END, os.path.basename(file_path))
                 
                 self.update_file_count()
-                self.log_message(f"Scan complete: Found {len(found_files)} files containing parameters from the list.")
+                self.log_message(f"✓ Scan complete: Found {len(found_files)} files containing parameters from the list.")
                 
             # Schedule the UI update on the main thread
             self.root.after(0, update_ui)

@@ -5,7 +5,12 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('Drift.gif', '.'), ('Add_new_parameter/add_new_parameter.exe', 'Add_new_parameter'), ('Split_parameter_tool/split_parameter.exe', 'Split_parameter_tool'), ('Update_parameter/dcm_parameter_tool.exe', 'Update_parameter')],
+    datas=[
+        ('Drift.gif', '.'), 
+        ('Add_new_parameter/add_new_parameter.exe', 'Add_new_parameter'), 
+        ('Split_parameter_tool/split_parameter_pro.exe', 'Split_parameter_tool'), 
+        ('update_parameter/dcm_parameter_tool.exe', 'update_parameter')
+    ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

@@ -173,17 +173,20 @@ def read_file(file_path):
         return ""
 
 def find_files_with_parameters(directory, parameters, file_extension=".dcm"):
-    """Find files in the directory containing any of the specified parameters."""
+    """Find files in the directory (recursively) containing any of the specified parameters."""
     matching_files = []
     parameter_occurrences = {}
     
-    all_files = [f for f in os.listdir(directory) if f.endswith(file_extension)]
-    print(f"Found {len(all_files)} {file_extension} files in directory: {directory}")
+    # Recursively find all files with the specified extension
+    all_files = []
+    for root, dirs, files in os.walk(directory):
+        for filename in files:
+            if filename.endswith(file_extension):
+                file_path = os.path.join(root, filename)
+                all_files.append(file_path)
     
-    for filename in all_files:
-        file_path = os.path.join(directory, filename)
-        print(f"Checking file: {filename}")
-        
+    for file_path in all_files:
+        filename = os.path.basename(file_path)
         try:
             try:
                 with open(file_path, 'r', encoding='utf-8') as file:
@@ -212,146 +215,251 @@ def find_files_with_parameters(directory, parameters, file_extension=".dcm"):
             matching_files.append(file_path)
             parameter_occurrences[file_path] = list(set(found_params))
 
-    for file, params in parameter_occurrences.items():
-        print(f"Parameters found in {os.path.basename(file)}: {', '.join(params)}")
-
-    if not matching_files:
-        print(f"No matching parameters found in any files in {directory}.")
-
     return matching_files
 
 def update_files_in_directory(directory, config_parameters, file_extension=".dcm", track_updates=False):
-    """Update parameters in files within the specified directory."""
+    """Update parameters in files within the specified directory (recursively)."""
     updated_files = []
     update_tracking = []  # Track individual updates
     
-    for filename in os.listdir(directory):
-        if filename.endswith(file_extension):
-            file_path = os.path.join(directory, filename)
+    # Recursively find all files with the specified extension
+    for root, dirs, files in os.walk(directory):
+        for filename in files:
+            if filename.endswith(file_extension):
+                file_path = os.path.join(root, filename)
             
-            try:
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as file:
-                        lines = file.readlines()
-                    encoding_used = 'utf-8'
-                except UnicodeDecodeError:
-                    with open(file_path, 'r', encoding='latin-1') as file:
-                        lines = file.readlines()
-                    encoding_used = 'latin-1'
-            except Exception as e:
-                print(f"Error reading file {filename}: {e}")
-                continue
-
-            updated_lines = []
-            current_param = None
-            current_block_lines = []
-            in_block = False
-            keywords = ("KENNLINIE", "KENNFELD", "FESTWERT", "GRUPPENKENNLINIE")
-            file_was_modified = False
-            
-            for i, line in enumerate(lines):
-                stripped_line = line.strip()
-                
-                if stripped_line.startswith(keywords):
-                    parts = stripped_line.split()
-                    if len(parts) > 1:
-                        current_param = parts[1]
-                        in_block = True
-                        current_block_lines = [line]
-                        print(f"Found parameter definition: {current_param} in {filename} at line {i+1}")
-                        updated_lines.append(line)
-                        continue
-                
-                if in_block:
-                    current_block_lines.append(line)
-                    
-                    if stripped_line == 'END':
-                        in_block = False
-                        if current_param not in config_parameters:
-                            current_param = None
-                            current_block_lines = []
-                
-                if stripped_line.startswith('WERT') and current_param and current_param in config_parameters:
-                    # Capture old block before modification
-                    old_block = ''.join(current_block_lines)
-                    
-                    # Extract old value
-                    old_value = stripped_line.split(maxsplit=1)[1] if len(stripped_line.split()) > 1 else ""
-                    new_value = config_parameters[current_param]
-                    indentation = line[:len(line) - len(line.lstrip())]
-                    line = f"{indentation}WERT {new_value}\n"
-                    print(f"Updated {current_param} to {new_value} in {filename} at line {i+1}")
-                    file_was_modified = True
-                    
-                    # Build new block (replace WERT line in current block)
-                    new_block_lines = []
-                    for bl in current_block_lines[:-1]:  # Exclude current WERT line
-                        new_block_lines.append(bl)
-                    new_block_lines.append(line)
-                    
-                    # Track update with full blocks
-                    if track_updates:
-                        update_tracking.append({
-                            'file': file_path,
-                            'folder': directory,
-                            'parameter': current_param,
-                            'old_value': old_block.rstrip(),
-                            'new_value': '',  # Will be built when we hit END
-                            'status': 'Updated',
-                            '_building_new': new_block_lines
-                        })
-                
-                elif stripped_line.startswith('TEXT') and current_param and current_param in config_parameters:
-                    # Capture old block before modification
-                    old_block = ''.join(current_block_lines)
-                    
-                    # Extract old value
-                    old_value = stripped_line.split(maxsplit=1)[1] if len(stripped_line.split()) > 1 else ""
-                    new_value = config_parameters[current_param]
-                    indentation = line[:len(line) - len(line.lstrip())]
-                    line = f"{indentation}TEXT {new_value}\n"
-                    print(f"Updated {current_param} to {new_value} in {filename} at line {i+1}")
-                    file_was_modified = True
-                    
-                    # Build new block (replace TEXT line in current block)
-                    new_block_lines = []
-                    for bl in current_block_lines[:-1]:  # Exclude current TEXT line
-                        new_block_lines.append(bl)
-                    new_block_lines.append(line)
-                    
-                    # Track update with full blocks
-                    if track_updates:
-                        update_tracking.append({
-                            'file': file_path,
-                            'folder': directory,
-                            'parameter': current_param,
-                            'old_value': old_block.rstrip(),
-                            'new_value': '',  # Will be built when we hit END
-                            'status': 'Updated',
-                            '_building_new': new_block_lines
-                        })
-                
-                updated_lines.append(line)
-                
-                # When we hit END, complete the new_value block in tracking
-                if stripped_line == 'END' and track_updates and update_tracking:
-                    for track_entry in reversed(update_tracking):
-                        if '_building_new' in track_entry and not track_entry['new_value']:
-                            track_entry['_building_new'].append(line)
-                            track_entry['new_value'] = ''.join(track_entry['_building_new']).rstrip()
-                            del track_entry['_building_new']
-                            break
-                    current_param = None
-                    current_block_lines = []
-            
-            if file_was_modified:
-                try:
-                    with open(file_path, 'w', encoding= encoding_used) as file:
-                        file.writelines(updated_lines)
-                    updated_files.append(file_path)
-                    print(f"Successfully updated file: {filename}")
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as file:
+                            lines = file.readlines()
+                        encoding_used = 'utf-8'
+                    except UnicodeDecodeError:
+                        with open(file_path, 'r', encoding='latin-1') as file:
+                            lines = file.readlines()
+                        encoding_used = 'latin-1'
                 except Exception as e:
-                    print(f"Error writing to file {filename}: {e}")
+                    print(f"Error reading file {filename}: {e}")
+                    continue
+
+                updated_lines = []
+                current_param = None
+                current_block_lines = []
+                in_block = False
+                keywords = ("KENNLINIE", "KENNFELD", "FESTWERT", "GRUPPENKENNLINIE")
+                file_was_modified = False
+                
+                for i, line in enumerate(lines):
+                    stripped_line = line.strip()
+                    
+                    if stripped_line.startswith(keywords):
+                        parts = stripped_line.split()
+                        if len(parts) > 1:
+                            current_param = parts[1]
+                            in_block = True
+                            current_block_lines = [line]
+                            updated_lines.append(line)
+                            continue
+                    
+                    if in_block:
+                        current_block_lines.append(line)
+                        
+                        if stripped_line == 'END':
+                            in_block = False
+                            if current_param not in config_parameters:
+                                current_param = None
+                                current_block_lines = []
+                    
+                    if stripped_line.startswith('WERT') and current_param and current_param in config_parameters:
+                        # Capture old block before modification
+                        old_block = ''.join(current_block_lines)
+                        
+                        # Extract old value
+                        old_value = stripped_line.split(maxsplit=1)[1] if len(stripped_line.split()) > 1 else ""
+                        new_value = config_parameters[current_param]
+                        indentation = line[:len(line) - len(line.lstrip())]
+                        line = f"{indentation}WERT {new_value}\n"
+                        file_was_modified = True
+                        
+                        # Build new block (replace WERT line in current block)
+                        new_block_lines = []
+                        for bl in current_block_lines[:-1]:  # Exclude current WERT line
+                            new_block_lines.append(bl)
+                        new_block_lines.append(line)
+                        
+                        # Track update with full blocks
+                        if track_updates:
+                            update_tracking.append({
+                                'file': file_path,
+                                'folder': directory,
+                                'parameter': current_param,
+                                'old_value': old_block.rstrip(),
+                                'new_value': '',  # Will be built when we hit END
+                                'status': 'Updated',
+                                '_building_new': new_block_lines
+                            })
+                    
+                    elif stripped_line.startswith('TEXT') and current_param and current_param in config_parameters:
+                        # Capture old block before modification
+                        old_block = ''.join(current_block_lines)
+                        
+                        # Extract old value
+                        old_value = stripped_line.split(maxsplit=1)[1] if len(stripped_line.split()) > 1 else ""
+                        new_value = config_parameters[current_param]
+                        indentation = line[:len(line) - len(line.lstrip())]
+                        line = f"{indentation}TEXT {new_value}\n"
+                        file_was_modified = True
+                        
+                        # Build new block (replace TEXT line in current block)
+                        new_block_lines = []
+                        for bl in current_block_lines[:-1]:  # Exclude current TEXT line
+                            new_block_lines.append(bl)
+                        new_block_lines.append(line)
+                        
+                        # Track update with full blocks
+                        if track_updates:
+                            update_tracking.append({
+                                'file': file_path,
+                                'folder': directory,
+                                'parameter': current_param,
+                                'old_value': old_block.rstrip(),
+                                'new_value': '',  # Will be built when we hit END
+                                'status': 'Updated',
+                                '_building_new': new_block_lines
+                            })
+                    
+                    updated_lines.append(line)
+                    
+                    # When we hit END, complete the new_value block in tracking
+                    if stripped_line == 'END' and track_updates and update_tracking:
+                        for track_entry in reversed(update_tracking):
+                            if '_building_new' in track_entry and not track_entry['new_value']:
+                                track_entry['_building_new'].append(line)
+                                track_entry['new_value'] = ''.join(track_entry['_building_new']).rstrip()
+                                del track_entry['_building_new']
+                                break
+                        current_param = None
+                        current_block_lines = []
+                
+                if file_was_modified:
+                    try:
+                        with open(file_path, 'w', encoding= encoding_used) as file:
+                            file.writelines(updated_lines)
+                        updated_files.append(file_path)
+                    except Exception as e:
+                        print(f"Error writing to file {filename}: {e}")
+    
+    if track_updates:
+        return updated_files, update_tracking
+    return updated_files
+
+def update_specific_files_optimized(file_cache_dict, config_parameters, track_updates=False):
+    """Update specific files using cached content for maximum speed."""
+    updated_files = []
+    update_tracking = []
+    keywords = ("KENNLINIE", "KENNFELD", "FESTWERT", "GRUPPENKENNLINIE")
+    
+    for file_path, cache_data in file_cache_dict.items():
+        content = cache_data['content']
+        encoding_used = cache_data['encoding']
+        lines = content.split('\\n')
+        
+        # Convert back to line format with newlines
+        lines = [line + '\\n' for line in lines]
+        if lines and not lines[-1].endswith('\\n'):
+            lines[-1] = lines[-1].rstrip('\\n')
+
+        updated_lines = []
+        current_param = None
+        current_block_lines = []
+        in_block = False
+        file_was_modified = False
+        
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+            
+            if stripped_line.startswith(keywords):
+                parts = stripped_line.split()
+                if len(parts) > 1:
+                    current_param = parts[1]
+                    in_block = True
+                    current_block_lines = [line]
+                    updated_lines.append(line)
+                    continue
+            
+            if in_block:
+                current_block_lines.append(line)
+                
+                if stripped_line == 'END':
+                    in_block = False
+                    if current_param not in config_parameters:
+                        current_param = None
+                        current_block_lines = []
+            
+            if stripped_line.startswith('WERT') and current_param and current_param in config_parameters:
+                old_block = ''.join(current_block_lines)
+                new_value = config_parameters[current_param]
+                indentation = line[:len(line) - len(line.lstrip())]
+                line = f"{indentation}WERT {new_value}\\n"
+                file_was_modified = True
+                
+                new_block_lines = []
+                for bl in current_block_lines[:-1]:
+                    new_block_lines.append(bl)
+                new_block_lines.append(line)
+                
+                if track_updates:
+                    update_tracking.append({
+                        'file': file_path,
+                        'folder': os.path.dirname(file_path),
+                        'parameter': current_param,
+                        'old_value': old_block.rstrip(),
+                        'new_value': '',
+                        'status': 'Updated',
+                        '_building_new': new_block_lines
+                    })
+            
+            elif stripped_line.startswith('TEXT') and current_param and current_param in config_parameters:
+                old_block = ''.join(current_block_lines)
+                new_value = config_parameters[current_param]
+                indentation = line[:len(line) - len(line.lstrip())]
+                line = f"{indentation}TEXT {new_value}\\n"
+                file_was_modified = True
+                
+                new_block_lines = []
+                for bl in current_block_lines[:-1]:
+                    new_block_lines.append(bl)
+                new_block_lines.append(line)
+                
+                if track_updates:
+                    update_tracking.append({
+                        'file': file_path,
+                        'folder': os.path.dirname(file_path),
+                        'parameter': current_param,
+                        'old_value': old_block.rstrip(),
+                        'new_value': '',
+                        'status': 'Updated',
+                        '_building_new': new_block_lines
+                    })
+            
+            updated_lines.append(line)
+            
+            if stripped_line == 'END' and track_updates and update_tracking:
+                for track_entry in reversed(update_tracking):
+                    if '_building_new' in track_entry and not track_entry['new_value']:
+                        track_entry['_building_new'].append(line)
+                        track_entry['new_value'] = ''.join(track_entry['_building_new']).rstrip()
+                        del track_entry['_building_new']
+                        break
+                current_param = None
+                current_block_lines = []
+        
+        if file_was_modified:
+            try:
+                with open(file_path, 'w', encoding=encoding_used) as file:
+                    file.writelines(updated_lines)
+                updated_files.append(file_path)
+            except Exception as e:
+                print(f"Error writing to file {os.path.basename(file_path)}: {e}")
     
     if track_updates:
         return updated_files, update_tracking
@@ -474,12 +582,181 @@ def update_specific_files(file_list, config_parameters, track_updates=False):
                 with open(file_path, 'w', encoding=encoding_used) as file:
                     file.writelines(updated_lines)
                 updated_files.append(file_path)
-                print(f"Successfully updated file: {os.path.basename(file_path)}")
             except Exception as e:
                 print(f"Error writing to file {os.path.basename(file_path)}: {e}")
     
     if track_updates:
         return updated_files, update_tracking
+    return updated_files
+
+def remove_parameters_from_files_optimized(file_cache_dict, parameters_to_remove, track_removals=False):
+    """Remove entire parameter blocks from files using cached content."""
+    updated_files = []
+    removal_tracking = []
+    keywords = ("KENNLINIE", "KENNFELD", "FESTWERT", "GRUPPENKENNLINIE")
+    
+    for file_path, cache_data in file_cache_dict.items():
+        content = cache_data['content']
+        encoding_used = cache_data['encoding']
+        lines = content.split('\\n')
+        
+        # Convert back to line format with newlines
+        lines = [line + '\\n' for line in lines]
+        if lines and not lines[-1].endswith('\\n'):
+            lines[-1] = lines[-1].rstrip('\\n')
+
+        updated_lines = []
+        current_param = None
+        in_block = False
+        skip_block = False
+        removed_block = []
+        file_was_modified = False
+        
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+            
+            if stripped_line.startswith(keywords):
+                parts = stripped_line.split()
+                if len(parts) > 1:
+                    current_param = parts[1]
+                    in_block = True
+                    
+                    if current_param in parameters_to_remove:
+                        skip_block = True
+                        removed_block = [line]
+                        file_was_modified = True
+                        continue
+                    else:
+                        skip_block = False
+            
+            if in_block and skip_block:
+                removed_block.append(line)
+                
+                if stripped_line == 'END':
+                    in_block = False
+                    skip_block = False
+                    
+                    if track_removals:
+                        removal_tracking.append({
+                            'file': file_path,
+                            'folder': os.path.dirname(file_path),
+                            'parameter': current_param,
+                            'removed_block': ''.join(removed_block).rstrip(),
+                            'status': 'Removed'
+                        })
+                    
+                    removed_block = []
+                    current_param = None
+                continue
+            
+            if in_block and stripped_line == 'END':
+                in_block = False
+                current_param = None
+            
+            if not skip_block:
+                updated_lines.append(line)
+        
+        if file_was_modified:
+            try:
+                with open(file_path, 'w', encoding=encoding_used) as file:
+                    file.writelines(updated_lines)
+                updated_files.append(file_path)
+            except Exception as e:
+                print(f"Error writing to file {os.path.basename(file_path)}: {e}")
+    
+    if track_removals:
+        return updated_files, removal_tracking
+    return updated_files
+
+def remove_parameters_from_files(file_list, parameters_to_remove, track_removals=False):
+    """Remove entire parameter blocks from files."""
+    updated_files = []
+    removal_tracking = []
+    keywords = ("KENNLINIE", "KENNFELD", "FESTWERT", "GRUPPENKENNLINIE")
+    
+    for file_path in file_list:
+        try:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    lines = file.readlines()
+                encoding_used = 'utf-8'
+            except UnicodeDecodeError:
+                with open(file_path, 'r', encoding='latin-1') as file:
+                    lines = file.readlines()
+                encoding_used = 'latin-1'
+        except Exception as e:
+            print(f"Error reading file {file_path}: {e}")
+            continue
+
+        updated_lines = []
+        current_param = None
+        in_block = False
+        skip_block = False
+        removed_block = []
+        file_was_modified = False
+        
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+            
+            # Start of a parameter block
+            if stripped_line.startswith(keywords):
+                parts = stripped_line.split()
+                if len(parts) > 1:
+                    current_param = parts[1]
+                    in_block = True
+                    
+                    # Check if this parameter should be removed
+                    if current_param in parameters_to_remove:
+                        skip_block = True
+                        removed_block = [line]
+                        file_was_modified = True
+                        continue
+                    else:
+                        skip_block = False
+            
+            # Inside a block that should be removed
+            if in_block and skip_block:
+                removed_block.append(line)
+                
+                # End of block to remove
+                if stripped_line == 'END':
+                    in_block = False
+                    skip_block = False
+                    
+                    # Track removal
+                    if track_removals:
+                        removal_tracking.append({
+                            'file': file_path,
+                            'folder': os.path.dirname(file_path),
+                            'parameter': current_param,
+                            'removed_block': ''.join(removed_block).rstrip(),
+                            'status': 'Removed'
+                        })
+                    
+                    removed_block = []
+                    current_param = None
+                continue
+            
+            # End of normal block
+            if in_block and stripped_line == 'END':
+                in_block = False
+                current_param = None
+            
+            # Keep lines that are not in removed blocks
+            if not skip_block:
+                updated_lines.append(line)
+        
+        # Write file if modified
+        if file_was_modified:
+            try:
+                with open(file_path, 'w', encoding=encoding_used) as file:
+                    file.writelines(updated_lines)
+                updated_files.append(file_path)
+            except Exception as e:
+                print(f"Error writing to file {os.path.basename(file_path)}: {e}")
+    
+    if track_removals:
+        return updated_files, removal_tracking
     return updated_files
 
 def process_multiple_directories(directories, config_parameters, file_extension=".dcm"):
@@ -488,7 +765,6 @@ def process_multiple_directories(directories, config_parameters, file_extension=
     all_updated_files = []
     
     for directory in directories:
-        print(f"\nProcessing directory: {directory}")
         matching_files = find_files_with_parameters(directory, config_parameters, file_extension)
         all_matching_files.extend(matching_files)
         updated_files = update_files_in_directory(directory, config_parameters, file_extension)
@@ -663,12 +939,12 @@ class MultiDirectoryDialog:
     def load_subdirectories(self, parent_dir):
         self.available_listbox.delete(0, tk.END)
         try:
-            items = os.listdir(parent_dir)
             directories = []
-            for item in items:
-                item_path = os.path.join(parent_dir, item)
-                if os.path.isdir(item_path):
-                    directories.append(item_path)
+            # Use os.walk to recursively find all subdirectories
+            for root, dirs, files in os.walk(parent_dir):
+                for dir_name in dirs:
+                    dir_path = os.path.join(root, dir_name)
+                    directories.append(dir_path)
             directories.sort()
             for directory in directories:
                 self.available_listbox.insert(tk.END, directory)
@@ -834,6 +1110,7 @@ class ParameterUpdateTool:
         
         # Excel report tracking
         self.update_history = []  # Track all parameter updates for Excel report
+        self.removal_history = []  # Track all parameter removals
         self.config_parameters = {}  # Store config parameters
         self.file_contents_cache = {}  # Cache file contents for Excel generation
         self.matching_files_cache = []  # Store list of files that need updating (avoid re-scanning)
@@ -914,14 +1191,17 @@ class ParameterUpdateTool:
 
         button_frame = tk.Frame(main_frame, bg=self.colors['bg'])
         button_frame.grid(row=5, column=0, columnspan=3, pady=(10, 0))
-        tk.Button(button_frame, text="1. Preview Changes", command=self.preview_changes,
-                  bg=self.colors['primary'], fg='white', width=16, font=('Segoe UI', 9, 'bold'),
-                  relief=tk.FLAT, cursor='hand2', pady=6).pack(side=tk.LEFT, padx=(0, 10))
-        tk.Button(button_frame, text="2. Update Files", command=self.start_update,
-                  bg=self.colors['success'], fg='white', width=16, font=('Segoe UI', 9, 'bold'),
-                  relief=tk.FLAT, cursor='hand2', pady=6).pack(side=tk.LEFT, padx=(0, 10))
+        tk.Button(button_frame, text="Preview Changes", command=self.preview_changes,
+                  bg=self.colors['primary'], fg='white', width=14, font=('Segoe UI', 9, 'bold'),
+                  relief=tk.FLAT, cursor='hand2', pady=6).pack(side=tk.LEFT, padx=(0, 5))
+        tk.Button(button_frame, text="Update Files", command=self.start_update,
+                  bg=self.colors['success'], fg='white', width=14, font=('Segoe UI', 9, 'bold'),
+                  relief=tk.FLAT, cursor='hand2', pady=6).pack(side=tk.LEFT, padx=(0, 5))
+        tk.Button(button_frame, text="Remove Params", command=self.start_remove,
+                  bg=self.colors['danger'], fg='white', width=14, font=('Segoe UI', 9, 'bold'),
+                  relief=tk.FLAT, cursor='hand2', pady=6).pack(side=tk.LEFT, padx=(0, 5))
         tk.Button(button_frame, text="📊 Export Excel", command=self.export_excel_report,
-                  bg='#9C27B0', fg='white', width=16, font=('Segoe UI', 9, 'bold'),
+                  bg='#9C27B0', fg='white', width=14, font=('Segoe UI', 9, 'bold'),
                   relief=tk.FLAT, cursor='hand2', pady=6).pack(side=tk.LEFT)
 
         tk.Label(main_frame, text="Results:", font=('Segoe UI', 10, 'bold'),
@@ -936,6 +1216,14 @@ class ParameterUpdateTool:
         self.results_text.configure(yscrollcommand=scrollbar.set)
         self.results_text.grid(row=0, column=0, sticky='nsew')
         scrollbar.grid(row=0, column=1, sticky='ns')
+        
+        # Configure text tags for highlighting
+        self.results_text.tag_configure('diff_highlight', background='#FFFF99', foreground='#D32F2F', font=('Segoe UI', 9, 'bold'))
+        self.results_text.tag_configure('param_name', foreground='#1976D2', font=('Segoe UI', 9, 'bold'))
+        self.results_text.tag_configure('success', foreground='#388E3C', font=('Segoe UI', 9, 'bold'))
+        self.results_text.tag_configure('warning', foreground='#F57C00', font=('Segoe UI', 9, 'bold'))
+        self.results_text.tag_configure('danger', foreground='#C00000', font=('Segoe UI', 9, 'bold'))
+        
         main_frame.columnconfigure(0, weight=1)
         main_frame.rowconfigure(7, weight=1)
 
@@ -995,8 +1283,25 @@ class ParameterUpdateTool:
         self.save_config()
         self.root.destroy()
 
-    def log_message(self, message):
-        self.results_text.insert(tk.END, f"{datetime.now().strftime('%H:%M:%S')} - {message}\n")
+    def log_message(self, message, tag=None):
+        timestamp = f"{datetime.now().strftime('%H:%M:%S')} - "
+        self.results_text.insert(tk.END, timestamp)
+        self.results_text.insert(tk.END, f"{message}\n", tag)
+        self.results_text.see(tk.END)
+    
+    def log_parameter_diff(self, param_name, current_value, target_value, file_name):
+        """Log parameter with highlight if values differ"""
+        timestamp = f"{datetime.now().strftime('%H:%M:%S')} - "
+        self.results_text.insert(tk.END, timestamp)
+        self.results_text.insert(tk.END, f"  Parameter: ", None)
+        self.results_text.insert(tk.END, f"{param_name}", 'param_name')
+        
+        if current_value != target_value:
+            self.results_text.insert(tk.END, f" [NEEDS UPDATE] ", 'diff_highlight')
+            self.results_text.insert(tk.END, f"Current: {current_value} → Target: {target_value}\n", None)
+        else:
+            self.results_text.insert(tk.END, f" [OK] Current: {current_value}\n", 'success')
+        
         self.results_text.see(tk.END)
 
     def open_file(self):
@@ -1115,6 +1420,13 @@ class ParameterUpdateTool:
                             logs.append(f"  Found {len(found)} matching files:")
                             for fp in found:
                                 logs.append(f"    - {os.path.basename(fp)}")
+                                # Analyze parameters in the file
+                                file_params = extract_all_parameters_from_file(fp)
+                                for param in file_params:
+                                    if param['name'] in config_parameters:
+                                        current_val = param['value']
+                                        target_val = config_parameters[param['name']]
+                                        logs.append(('param_diff', param['name'], current_val, target_val, os.path.basename(fp)))
                             all_matching.extend(found)
                         else:
                             logs.append("  No matching files")
@@ -1133,14 +1445,21 @@ class ParameterUpdateTool:
                     logs.append(f"Cached {len(self.file_contents_cache)} files with original values")
             except Exception as e:
                 logs.append(f"Error during preview: {e}")
+                import traceback
+                logs.append(traceback.format_exc())
             finally:
                 self.root.after(0, lambda: self._apply_preview_logs(logs))
 
         threading.Thread(target=worker, daemon=True).start()
 
     def _apply_preview_logs(self, logs):
-        for line in logs:
-            self.log_message(line)
+        for item in logs:
+            if isinstance(item, tuple) and item[0] == 'param_diff':
+                # Special handling for parameter diff logs
+                _, param_name, current_val, target_val, file_name = item
+                self.log_parameter_diff(param_name, current_val, target_val, file_name)
+            else:
+                self.log_message(item)
         self._set_busy(False)
 
     def start_update(self):
@@ -1225,14 +1544,32 @@ class ParameterUpdateTool:
 
                 logs.append(f"\nProcessed {len(matching_files)} files containing target parameters.")
                 if all_updated:
-                    logs.append(f"\nUpdated {len(all_updated)} files:")
+                    logs.append(f"\n✓ Successfully updated {len(all_updated)} files:")
                     grouped = {}
                     for fp in all_updated:
-                        grouped.setdefault(os.path.dirname(fp), []).append(os.path.basename(fp))
-                    for d, files in grouped.items():
+                        grouped.setdefault(os.path.dirname(fp), []).append(fp)
+                    for d, file_paths in grouped.items():
                         logs.append(f"\nDirectory: {d}")
-                        for f in files:
-                            logs.append(f"  - {f}")
+                        for fp in file_paths:
+                            logs.append(f"  - {os.path.basename(fp)}")
+                            # Show what was changed in this file
+                            for track in all_tracking:
+                                if track['file'] == fp:
+                                    # Extract old and new values from the tracking data
+                                    param_name = track['parameter']
+                                    # Parse old value from old_value block
+                                    old_val = ''
+                                    for line in track['old_value'].split('\n'):
+                                        if line.strip().startswith('WERT') or line.strip().startswith('TEXT'):
+                                            old_val = line.split(maxsplit=1)[1] if len(line.split()) > 1 else ''
+                                            break
+                                    # Parse new value from new_value block
+                                    new_val = ''
+                                    for line in track['new_value'].split('\n'):
+                                        if line.strip().startswith('WERT') or line.strip().startswith('TEXT'):
+                                            new_val = line.split(maxsplit=1)[1] if len(line.split()) > 1 else ''
+                                            break
+                                    logs.append(('param_update', param_name, old_val, new_val, os.path.basename(fp)))
                 else:
                     logs.append("No files required changes (values already correct).")
 
@@ -1243,15 +1580,159 @@ class ParameterUpdateTool:
 
         threading.Thread(target=worker, daemon=True).start()
 
+    def start_remove(self):
+        """Remove parameters from files."""
+        if self._busy:
+            messagebox.showinfo("Info", "Task đang chạy, vui lòng đợi.")
+            return
+        if not self.validate_inputs():
+            return
+        
+        result = messagebox.askyesno(
+            "Confirm Removal",
+            f"⚠️ WARNING: This will PERMANENTLY DELETE all parameter blocks listed in the config file from {len(self.selected_directories)} directories.\n\n"
+            f"This action cannot be undone!\n\n"
+            f"Do you want to continue?",
+            icon='warning'
+        )
+        if not result:
+            return
+
+        self.results_text.delete(1.0, tk.END)
+        self.log_message("Starting parameter removal...")
+        self._set_busy(True)
+
+        def worker():
+            logs = []
+            try:
+                ext = self.extension_var.get()
+                config_path = self.list_file_combo.get().strip()
+                config_parameters = read_config_file(config_path)
+                if not config_parameters:
+                    logs.append("No valid parameters found in config file.")
+                    self.root.after(0, lambda: self._finish_remove(logs, [], []))
+                    return
+
+                logs.append(f"⚠️ Parameters to REMOVE: {len(config_parameters)}")
+                for p in config_parameters.keys():
+                    logs.append(f"  - {p}")
+                
+                # Find matching files
+                logs.append(f"\nScanning {len(self.selected_directories)} directories...")
+                matching_files = []
+                for directory in self.selected_directories:
+                    found_files = find_files_with_parameters(directory, config_parameters, ext)
+                    matching_files.extend(found_files)
+                
+                if not matching_files:
+                    logs.append("\nNo files found with the specified parameters.")
+                    self.root.after(0, lambda: self._finish_remove(logs, [], []))
+                    return
+
+                logs.append(f"\nFound {len(matching_files)} files containing target parameters.")
+                logs.append(f"\n🗑️ Removing parameters from files...")
+                
+                # Remove parameters
+                removed_files, removal_tracking = remove_parameters_from_files(
+                    matching_files, list(config_parameters.keys()), track_removals=True
+                )
+                
+                # Store removal history
+                self.removal_history = removal_tracking
+
+                logs.append(f"\n✓ Successfully processed {len(matching_files)} files.")
+                if removed_files:
+                    logs.append(f"✓ Modified {len(removed_files)} files:")
+                    grouped = {}
+                    for fp in removed_files:
+                        grouped.setdefault(os.path.dirname(fp), []).append(fp)
+                    for d, file_paths in grouped.items():
+                        logs.append(f"\nDirectory: {d}")
+                        for fp in file_paths:
+                            logs.append(f"  - {os.path.basename(fp)}")
+                            # Show what was removed
+                            for track in removal_tracking:
+                                if track['file'] == fp:
+                                    logs.append(('param_removed', track['parameter'], os.path.basename(fp)))
+                else:
+                    logs.append("No files were modified (parameters not found).")
+
+                self.root.after(0, lambda: self._finish_remove(logs, matching_files, removed_files))
+            except Exception as e:
+                logs.append(f"Error during removal: {e}")
+                import traceback
+                logs.append(traceback.format_exc())
+                self.root.after(0, lambda: self._finish_remove(logs, [], []))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _finish_remove(self, logs, all_matching, all_removed):
+        for item in logs:
+            if isinstance(item, tuple) and item[0] == 'param_removed':
+                _, param_name, file_name = item
+                timestamp = f"{datetime.now().strftime('%H:%M:%S')} - "
+                self.results_text.insert(tk.END, timestamp)
+                self.results_text.insert(tk.END, f"      🗑️ Removed: ", 'danger')
+                self.results_text.insert(tk.END, f"{param_name}", 'param_name')
+                self.results_text.insert(tk.END, f" from {file_name}\n", None)
+                self.results_text.see(tk.END)
+            else:
+                self.log_message(item)
+        
+        if all_removed:
+            removed_count = sum(len(self.removal_history) for _ in [None])
+            # Clear cache to reflect updated files
+            self.file_contents_cache = {}
+            self.matching_files_cache = []
+            messagebox.showinfo("Success", 
+                f"Removed parameters from {len(all_removed)} files.\n"
+                f"Total parameters removed: {len(self.removal_history)}")
+        else:
+            messagebox.showinfo("Info", "No parameters were removed.")
+        self._set_busy(False)
+
     def _finish_update(self, logs, all_matching, all_updated):
-        for line in logs:
-            self.log_message(line)
+        for item in logs:
+            if isinstance(item, tuple) and item[0] == 'param_update':
+                # Special handling for parameter update logs
+                _, param_name, old_val, new_val, file_name = item
+                timestamp = f"{datetime.now().strftime('%H:%M:%S')} - "
+                self.results_text.insert(tk.END, timestamp)
+                self.results_text.insert(tk.END, f"      ✓ Updated: ", 'success')
+                self.results_text.insert(tk.END, f"{param_name}", 'param_name')
+                self.results_text.insert(tk.END, f" [{old_val}]", None)
+                self.results_text.insert(tk.END, f" \u2192 ", 'diff_highlight')
+                self.results_text.insert(tk.END, f"[{new_val}]\\n", 'success')
+                self.results_text.see(tk.END)
+            else:
+                self.log_message(item)
         if all_updated:
+            # Clear cache to reflect updated files
+            self.file_contents_cache = {}
+            self.matching_files_cache = []
             messagebox.showinfo("Success", f"Updated {len(all_updated)} files.")
         else:
             messagebox.showinfo("Info", "No files updated.")
         self._set_busy(False)
 
+    def _build_target_block(self, param_block, target_value):
+        """Build target block by replacing WERT/TEXT value in parameter block"""
+        if not param_block:
+            return target_value
+        
+        lines = param_block.split('\n')
+        new_lines = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith('WERT') or stripped.startswith('TEXT'):
+                # Replace with new value, keeping indentation and keyword
+                indentation = line[:len(line) - len(line.lstrip())]
+                keyword = 'WERT' if stripped.startswith('WERT') else 'TEXT'
+                new_lines.append(f"{indentation}{keyword} {target_value}")
+            else:
+                new_lines.append(line)
+        return '\n'.join(new_lines)
+    
     def generate_sheet_current_parameters(self, wb, file_params_cache, config_parameters):
         """Generate Sheet 1: Parameters to Update with Current and Target Values"""
         ws = wb.create_sheet("Parameters to Update", 0)
@@ -1287,56 +1768,159 @@ class ParameterUpdateTool:
         ws.column_dimensions['D'].width = 25  # File Name
         ws.column_dimensions['E'].width = 40  # Folder Path
         
-        # Populate data - only parameters that exist in files
+        # Get all unique directories from selected_directories
+        all_directories = set()
+        for file_path in file_params_cache.keys():
+            folder_path = os.path.dirname(file_path)
+            all_directories.add(folder_path)
+        
+        # Also add directories that were selected but may have no matching files
+        if hasattr(self, 'selected_directories'):
+            for dir_path in self.selected_directories:
+                all_directories.add(dir_path)
+        
+        # First pass: Build reference templates for each parameter from actual files
+        param_templates = {}  # {param_name: sample_block}
+        for file_path, all_params in file_params_cache.items():
+            for param_detail in all_params:
+                param_name = param_detail['name']
+                if param_name in config_parameters and param_name not in param_templates:
+                    # Store the first occurrence of each parameter as template
+                    param_templates[param_name] = param_detail['block']
+        
+        # Populate data - ALL parameters from config for ALL directories
         row_num = 2
+        not_found_fill = PatternFill(start_color="E0E0E0", end_color="E0E0E0", fill_type="solid")  # Gray for missing
         
         for param_name, target_value in config_parameters.items():
-            for file_path, all_params in file_params_cache.items():
-                file_name = os.path.basename(file_path)
-                folder_path = os.path.dirname(file_path)
+            for folder_path in sorted(all_directories):
+                # Find all files in this folder that are in cache
+                files_in_folder = [fp for fp in file_params_cache.keys() if os.path.dirname(fp) == folder_path]
                 
-                # Look for the parameter in this file
-                param_found = False
-                param_block = None
-                
-                for param_detail in all_params:
-                    if param_detail['name'] == param_name:
-                        param_found = True
-                        param_block = param_detail['block']
-                        break
-                
-                # Only add row if parameter exists in the file
-                if param_found:
-                    # Build target block by replacing WERT/TEXT line with new value
-                    target_block = ""
-                    if param_block:
-                        lines = param_block.split('\n')
-                        new_lines = []
-                        for line in lines:
-                            stripped = line.strip()
-                            if stripped.startswith('WERT') or stripped.startswith('TEXT'):
-                                # Replace with new value, keeping indentation
-                                indentation = line[:len(line) - len(line.lstrip())]
-                                keyword = 'WERT' if stripped.startswith('WERT') else 'TEXT'
-                                new_lines.append(f"{indentation}{keyword} {target_value}")
-                            else:
-                                new_lines.append(line)
-                        target_block = '\n'.join(new_lines)
+                if not files_in_folder:
+                    # No files in cache for this folder - use template from other folders if available
+                    if param_name in param_templates:
+                        # Use actual parameter structure as template
+                        target_block_structure = self._build_target_block(param_templates[param_name], target_value)
+                    else:
+                        # No template available anywhere - just show value
+                        target_block_structure = target_value
                     
-                    row_data = [param_name, param_block, target_block, file_name, folder_path]
+                    row_data = [param_name, "NA - No files checked in this folder", target_block_structure, "NA", folder_path]
                     ws.append(row_data)
                     
-                    # Apply formatting
+                    # Apply special formatting for folders with no files
                     for col_idx, cell in enumerate(ws[row_num], 1):
                         cell.border = border
                         cell.alignment = Alignment(vertical="top", wrap_text=True)
-                        if col_idx == 2:  # Original Value - green
-                            cell.fill = found_fill
-                        elif col_idx == 3:  # Target Value - yellow highlight
-                            cell.fill = target_fill
-                            cell.font = Font(bold=True)
+                        cell.fill = not_found_fill
+                        
+                        if col_idx == 1:  # Parameter Name
+                            cell.font = Font(bold=True, color="666666")
+                        elif col_idx == 2:  # Original Value - "NA"
+                            cell.font = Font(italic=True, color="666666")
+                        elif col_idx == 3:  # Target Value - full structure
+                            cell.fill = PatternFill(start_color="FFE699", end_color="FFE699", fill_type="solid")
+                            cell.font = Font(bold=True, color="D97706")
+                        else:  # File Name, Folder Path
+                            cell.font = Font(italic=True, color="666666")
                     
                     row_num += 1
+                else:
+                    # Check each file in this folder
+                    param_found_in_folder = False
+                    
+                    for file_path in files_in_folder:
+                        all_params = file_params_cache[file_path]
+                        file_name = os.path.basename(file_path)
+                        
+                        # Look for the parameter in this file
+                        param_found = False
+                        param_block = None
+                        
+                        for param_detail in all_params:
+                            if param_detail['name'] == param_name:
+                                param_found = True
+                                param_found_in_folder = True
+                                param_block = param_detail['block']
+                                break
+                        
+                        if param_found:
+                            # Build target block using helper method
+                            target_block = self._build_target_block(param_block, target_value)
+                            
+                            # Extract actual values for comparison
+                            original_value = ""
+                            target_value_clean = target_value
+                            
+                            for line in param_block.split('\n'):
+                                stripped = line.strip()
+                                if stripped.startswith('WERT') or stripped.startswith('TEXT'):
+                                    parts = stripped.split(maxsplit=1)
+                                    if len(parts) > 1:
+                                        original_value = parts[1]
+                                    break
+                            
+                            # Check if values differ
+                            values_differ = (original_value.strip() != target_value_clean.strip())
+                            
+                            row_data = [param_name, param_block, target_block, file_name, folder_path]
+                            ws.append(row_data)
+                            
+                            # Apply formatting with conditional highlighting
+                            for col_idx, cell in enumerate(ws[row_num], 1):
+                                cell.border = border
+                                cell.alignment = Alignment(vertical="top", wrap_text=True)
+                                
+                                if values_differ:
+                                    # Highlight entire row if values differ
+                                    if col_idx == 1:  # Parameter Name - highlight in red
+                                        cell.font = Font(bold=True, color="C00000")
+                                    elif col_idx == 2:  # Original Value - red background
+                                        cell.fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+                                        cell.font = Font(bold=True, color="9C0006")
+                                    elif col_idx == 3:  # Target Value - yellow/orange highlight
+                                        cell.fill = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+                                        cell.font = Font(bold=True, color="9C5700")
+                                else:
+                                    # Values match - use green
+                                    if col_idx == 2 or col_idx == 3:
+                                        cell.fill = found_fill  # Light green
+                            
+                            row_num += 1
+                    
+                    # If parameter not found in any file in this folder
+                    if not param_found_in_folder:
+                        # Use template from other folders if available
+                        if param_name in param_templates:
+                            # Use actual parameter structure as template
+                            target_block_structure = self._build_target_block(param_templates[param_name], target_value)
+                        else:
+                            # No template available anywhere - just show value
+                            target_block_structure = target_value
+                        
+                        row_data = [param_name, "NA - Parameter not found in folder", target_block_structure, "NA", folder_path]
+                        ws.append(row_data)
+                        
+                        # Apply special formatting for missing parameters
+                        for col_idx, cell in enumerate(ws[row_num], 1):
+                            cell.border = border
+                            cell.alignment = Alignment(vertical="top", wrap_text=True)
+                            
+                            if col_idx == 1:  # Parameter Name - Gray bold
+                                cell.font = Font(bold=True, color="666666")
+                                cell.fill = not_found_fill
+                            elif col_idx == 2:  # Original Value - Gray with "NA"
+                                cell.fill = not_found_fill
+                                cell.font = Font(italic=True, color="666666")
+                            elif col_idx == 3:  # Target Value - Light orange to show what would be added
+                                cell.fill = PatternFill(start_color="FFE699", end_color="FFE699", fill_type="solid")
+                                cell.font = Font(bold=True, color="D97706")
+                            else:
+                                cell.fill = not_found_fill
+                                cell.font = Font(italic=True, color="666666")
+                        
+                        row_num += 1
         
         ws.freeze_panes = "A2"
     
@@ -1471,6 +2055,67 @@ class ParameterUpdateTool:
         
         ws.freeze_panes = "A2"
     
+    def generate_sheet_removal_tracking(self, wb):
+        """Generate Sheet 4: Parameter Removal Tracking"""
+        ws = wb.create_sheet("Parameter Removals", 3)
+        
+        # Define styles
+        header_fill = PatternFill(start_color="C00000", end_color="C00000", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        removed_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")  # Light red
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Set headers
+        headers = ["Folder", "File", "Parameter", "Removed Block", "Status"]
+        ws.append(headers)
+        
+        # Style header row
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Set column widths
+        ws.column_dimensions['A'].width = 40  # Folder
+        ws.column_dimensions['B'].width = 25  # File
+        ws.column_dimensions['C'].width = 30  # Parameter
+        ws.column_dimensions['D'].width = 80  # Removed Block
+        ws.column_dimensions['E'].width = 12  # Status
+        
+        # Populate data from removal history
+        row_num = 2
+        for entry in self.removal_history:
+            folder = entry.get('folder', '')
+            file_name = os.path.basename(entry.get('file', ''))
+            parameter = entry.get('parameter', '')
+            removed_block = entry.get('removed_block', '')
+            status = entry.get('status', '')
+            
+            row_data = [folder, file_name, parameter, removed_block, status]
+            ws.append(row_data)
+            
+            # Apply formatting
+            for cell in ws[row_num]:
+                cell.border = border
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+                cell.fill = removed_fill
+            
+            row_num += 1
+        
+        # If no removal history, show message
+        if not self.removal_history:
+            ws.append(["No removal operations recorded yet.", "", "", "", ""])
+            ws['A2'].font = Font(italic=True, color="666666")
+        
+        ws.freeze_panes = "A2"
+    
     def export_excel_report(self):
         """Export comprehensive Excel report with 3 sheets"""
         # Check if openpyxl is available
@@ -1563,6 +2208,10 @@ class ParameterUpdateTool:
             self.root.update()
             self.generate_sheet_update_comparison(wb, self.config_parameters)
             
+            self.log_message("Generating Sheet 4: Parameter Removals...")
+            self.root.update()
+            self.generate_sheet_removal_tracking(wb)
+            
             # Save workbook
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             excel_filename = f"Update_Report_{timestamp}.xlsx"
@@ -1581,7 +2230,8 @@ class ParameterUpdateTool:
                 f"Location: {report_folder}\\n\\n"
                 f"Total files analyzed: {file_count}\\n"
                 f"Parameters tracked: {len(self.config_parameters)}\\n"
-                f"Update operations: {len(self.update_history)}")
+                f"Update operations: {len(self.update_history)}\\n"
+                f"Removal operations: {len(self.removal_history)}")
             
             # Optional: Open folder
             if messagebox.askyesno("Open Folder", "Do you want to open the Report folder?"):
